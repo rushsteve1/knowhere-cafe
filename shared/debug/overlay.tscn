@@ -1,0 +1,59 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8wbjgotqt617"]
+
+[ext_resource type="Script" path="res://shared/debug/overlay.gd" id="1_u08gs"]
+
+[node name="Overlay" type="Control"]
+visible = false
+top_level = true
+visibility_layer = 512
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_u08gs")
+
+[node name="FPSContainer" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 75.0
+offset_bottom = 42.0
+alignment = 1
+metadata/_edit_group_ = true
+
+[node name="FPSNumber" type="Label" parent="FPSContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "00"
+
+[node name="FPSLabel" type="Label" parent="FPSContainer"]
+layout_mode = 2
+text = "FPS"
+
+[node name="LogPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -355.0
+offset_top = -412.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="LogPanel"]
+layout_mode = 2
+
+[node name="LogList" type="ItemList" parent="LogPanel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+allow_search = false
+
+[node name="ConsoleEdit" type="LineEdit" parent="LogPanel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[connection signal="text_submitted" from="LogPanel/VBoxContainer/ConsoleEdit" to="." method="_on_console_edit_text_submitted"]

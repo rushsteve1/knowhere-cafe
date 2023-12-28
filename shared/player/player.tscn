@@ -1,0 +1,27 @@
+[gd_scene load_steps=3 format=3 uid="uid://dq8rbjqdc8w73"]
+
+[ext_resource type="Script" path="res://shared/player/player.gd" id="1_7xrxj"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_7ef1g"]
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1_7xrxj")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.08165e-12, 0.75, 2.08165e-12)
+current = true
+
+[node name="LookRay" type="RayCast3D" parent="Camera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.08165e-12, -0.75, -2.08165e-12)
+target_position = Vector3(2.08165e-12, 2, 2.08165e-12)
+
+[node name="HandPoint" type="Node3D" parent="Camera3D"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.272719, -0.197908, -1.12763)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_7ef1g")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_energy = 0.1
+omni_range = 3.0

@@ -1,0 +1,45 @@
+[gd_scene load_steps=8 format=3 uid="uid://i3jvg88vhec6"]
+
+[ext_resource type="PackedScene" uid="uid://dq8rbjqdc8w73" path="res://shared/player/player.tscn" id="1_q8655"]
+[ext_resource type="Texture2D" uid="uid://d21ue5j2ylc2d" path="res://icon.svg" id="2_4am78"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_30wo6"]
+size = Vector3(30, 1, 30)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wajdd"]
+size = Vector3(30, 1, 30)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_50gvy"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hucqw"]
+albedo_texture = ExtResource("2_4am78")
+
+[sub_resource type="BoxMesh" id="BoxMesh_yc7kn"]
+material = SubResource("StandardMaterial3D_hucqw")
+
+[node name="Zoo" type="Node3D"]
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.21144, 0)
+
+[node name="Player" parent="." instance=ExtResource("1_q8655")]
+
+[node name="StaticFloor" type="StaticBody3D" parent="."]
+metadata/_edit_group_ = true
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticFloor"]
+shape = SubResource("BoxShape3D_30wo6")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StaticFloor"]
+mesh = SubResource("BoxMesh_wajdd")
+skeleton = NodePath("../..")
+
+[node name="StaticBox" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 1, -1)
+metadata/_edit_group_ = true
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBox"]
+shape = SubResource("BoxShape3D_50gvy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBox"]
+mesh = SubResource("BoxMesh_yc7kn")
