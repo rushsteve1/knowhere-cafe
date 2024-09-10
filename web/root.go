@@ -10,6 +10,16 @@ import (
 func RootHandler() http.Handler {
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
+		// TODO
+		w.Write([]byte("hello world"))
+		w.WriteHeader(http.StatusOK)
+	})
+
+	mux.Handle("/static",
+		http.StripPrefix("/static", http.FileServerFS(StaticFiles)),
+	)
+
 	mux.Handle("/src", http.RedirectHandler(
 		shared.REPO_URL,
 		http.StatusPermanentRedirect,
@@ -34,4 +44,4 @@ func postsHandler(w http.ResponseWriter, r *http.Request) {
 	ctxData.DB.Find(&models.Post{}, id)
 }
 
-func usersHandler(w http.)
+func usersHandler(w http.ResponseWriter, r *http.Request) {}

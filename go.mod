@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	github.com/emersion/go-imap/v2 v2.0.0-beta.3
 	github.com/go-webauthn/webauthn v0.11.2
+	github.com/lib/pq v1.10.9
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.12
 )

@@ -2,5 +2,6 @@
 .DS_Store
 .directory
 
-knowhere-cafe
+/knowhere-cafe
+/src
 *.log

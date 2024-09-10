@@ -2,24 +2,22 @@
 
 package shared
 
-import "slices"
-
-type TreeNode[T any] struct {
-	Self *T
-	Parent *TreeNode[T]
+type TreeNode[T comparable] struct {
+	Self     *T
+	Parent   *TreeNode[T]
 	Children []TreeNode[T]
 }
 
-type Tree[T any] struct {
-	Root TreeNode[T]
+type Tree[T comparable] struct {
+	Root  TreeNode[T]
 	Nodes []TreeNode[T]
 }
 
-func (t Tree[T]) Find(needle *T) *TreeNode[T] {
+func (t Tree[T]) Find(needle *T) Maybe[TreeNode[T]] {
 	for _, node := range t.Nodes {
 		if *node.Self == *needle {
-			return node
+			return Some(node)
 		}
 	}
-	return nil
+	return None[TreeNode[T]]()
 }

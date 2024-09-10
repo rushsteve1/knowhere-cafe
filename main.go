@@ -19,19 +19,24 @@ import (
 )
 
 func main() {
+	var err error
+
+	// Make the context data object that we will fill in as we go
+	state := shared.ContextState{}
+
 	// Load the flags
-	fcfg := loadFlags()
+	state.FlagCfg = loadFlags()
 
 	// Connect to the database
 	gormCfg := gorm.Config{
 		Logger: shared.GormLogger{},
 	}
 
-	db, err := gorm.Open(postgres.Open(fcfg.DbPath), &gormCfg)
+	state.DB, err = gorm.Open(postgres.Open(state.FlagCfg.DbPath), &gormCfg)
 	shared.LogOrDie("connect to database", err)
 
 	// Migrate the database
-	err = db.AutoMigrate(
+	err = state.DB.AutoMigrate(
 		&models.Config{},
 		&models.User{},
 		&models.Permissions{},
@@ -42,49 +47,46 @@ func main() {
 	shared.LogOrDie("migrate database", err)
 
 	// Load config from the database
-	cfg, err := models.QueryConfig(db)
+	state.Cfg, err = models.QueryConfig(state.DB)
 	shared.LogOrDie("load config", err)
 
 	// Connect to mail server(s)
-	imapClient, err := mail.IMAPConnect(cfg.IMAP)
-	shared.LogOrDie("connect to imap", err, "host", cfg.IMAP.Host)
+	if state.Cfg.IMAP.Valid {
+		state.IMAP, err = mail.IMAPConnect(state.Cfg.IMAP.V)
+		shared.LogOrDie("connect to imap", err, "host", state.Cfg.IMAP.V.Host)
+	}
 
-	smtpClient, err := mail.SMTPConnect(cfg.SMTP)
-	shared.LogOrDie("connect to smtp", err, "host", cfg.SMTP.Host)
-
-	// Make the context connections object
-	ctxConn := shared.ContextData{
-		FlagCfg: &fcfg,
-		Cfg:     cfg,
-		DB:      db,
-		IMAP:    imapClient,
-		SMTP:    smtpClient,
+	if state.Cfg.SMTP.Valid {
+		state.SMTP, err = mail.SMTPConnect(state.Cfg.SMTP.V)
+		shared.LogOrDie("connect to smtp", err, "host", state.Cfg.SMTP.V.Host)
 	}
 
 	// Start listening on the
 
 	// Prep the HTTP server
 	srv := http.Server{
-		Addr:              cfg.BindAddr,
+		Addr:              state.Cfg.BindAddr,
 		ReadHeaderTimeout: 3 * time.Second,
-		Handler:           web.RootMux(),
+		Handler:           web.RootHandler(),
 		ErrorLog: slog.NewLogLogger(
 			slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{}),
 			slog.LevelError,
 		),
 		BaseContext: func(_ net.Listener) context.Context {
 			ctx := context.Background()
-			context.WithValue(ctx, shared.CTX_DATA_KEY, ctxConn)
+			context.WithValue(ctx, shared.CTX_STATE_KEY, state)
 			return ctx
 		},
 	}
+
+	slog.Info("starting http server", "addr", state.Cfg.BindAddr)
 
 	// Start the HTTP server and spin
 	err = srv.ListenAndServe()
 	slog.Error("http server stopped", "error", err)
 }
 
-func loadFlags() models.FlagConfig {
+func loadFlags() *models.FlagConfig {
 	cfg := models.FlagConfig{}
 
 	// TODO flags
@@ -93,5 +95,5 @@ func loadFlags() models.FlagConfig {
 
 	cfg.DbPath = os.Args[1]
 
-	return cfg
+	return &cfg
 }

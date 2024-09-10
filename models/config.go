@@ -12,18 +12,19 @@ type FlagConfig struct {
 
 type Config struct {
 	gorm.Model
-	BindAddr string
-	DisplayName string
-	DomainName  string
-	ShowPionts bool
+	BindAddr          string
+	DisplayName       string
+	DomainName        string
+	ShowPoints        bool
 	AllowRegistration bool
-	AllowInvites bool
-	DevEndpoints bool
-	JSONRepr bool
-	XMLRepr bool
-	AdminUser   uint              `gorm:"references:users(id)"`
-	SMTP        sql.Null[ConfigCredentials] `gorm:"embedded;embeddedPrefix:smtp_"`
-	IMAP        sql.Null[ConfigCredentials] `gorm:"embedded;embeddedPrefix:imap_"`
+	AllowInvites      bool
+	DevEndpoints      bool
+	FeedEndpoints     bool
+	JSONRepr          bool
+	XMLRepr           bool
+	Lang              string
+	SMTP              sql.Null[ConfigCredentials] `gorm:"embedded;embeddedPrefix:smtp_"`
+	IMAP              sql.Null[ConfigCredentials] `gorm:"embedded;embeddedPrefix:imap_"`
 }
 
 type ConfigCredentials struct {
@@ -34,17 +35,29 @@ type ConfigCredentials struct {
 
 func DefaultConfig() Config {
 	return Config{
-		DisplayName: "Knowhere Cafe",
+		BindAddr:          ":9999",
+		DisplayName:       "Knowhere Cafe",
+		DomainName:        "knowhere.cafe",
+		ShowPoints:        true,
+		AllowRegistration: false,
+		AllowInvites:      true,
+		DevEndpoints:      true,
+		FeedEndpoints:     true,
+		JSONRepr:          true,
+		XMLRepr:           true,
+		Lang:              "en-us",
 	}
 }
 
-func QueryConfig(db *gorm.DB) (cfg *Config, error) {
-	res := db.Last(cfg)
+func QueryConfig(db *gorm.DB) (*Config, error) {
+	var cfg Config
+	res := db.Last(&cfg)
 
 	if res.RowsAffected == 0 {
-		db.Create(DefaultConfig())
+		def := DefaultConfig()
+		db.Create(&def)
 		return QueryConfig(db)
 	}
 
-	return cfg, res.Error
+	return &cfg, res.Error
 }

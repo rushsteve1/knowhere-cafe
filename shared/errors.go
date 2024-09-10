@@ -2,49 +2,34 @@
 
 package shared
 
-import (
-	"context"
-	"log/slog"
-	"os"
-	"time"
-
-	"gorm.io/gorm/logger"
-)
-
 type UnimplementedError struct{}
 
 func (UnimplementedError) Error() string {
 	return "Not Implemented"
 }
 
-func LogOrDie(msg string, err error, args ...any) {
-	if err != nil {
-		args = append([]any{"error", err}, args...)
-		slog.Error("DIE: "+msg, args...)
-		os.Exit(1)
+type NilValue struct{}
+
+func (NilValue) Error() string {
+	return "nil value"
+}
+
+type Maybe[T any] struct {
+	v *T
+}
+
+func (m Maybe[T]) Unwrap() (T, error) {
+	if m.v != nil {
+		return *m.v, nil
 	}
-	slog.Info(msg, args...)
+	var v T
+	return v, NilValue{}
 }
 
-type GormLogger struct{}
-
-func (GormLogger) LogMode(logger.LogLevel) logger.Interface {
-	// TODO IDK?
-	return nil
+func Some[T any](v T) Maybe[T] {
+	return Maybe[T]{&v}
 }
 
-func (GormLogger) Info(ctx context.Context, msg string, args ...any) {
-	slog.InfoContext(ctx, msg, args)
-}
-
-func (GormLogger) Warn(ctx context.Context, msg string, args ...any) {
-	slog.WarnContext(ctx, msg, args)
-}
-
-func (GormLogger) Error(ctx context.Context, msg string, args ...any) {
-	slog.ErrorContext(ctx, msg, args)
-}
-
-func (GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
-	// TODO IDK?
+func None[T any]() Maybe[T] {
+	return Maybe[T]{nil}
 }

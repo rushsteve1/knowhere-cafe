@@ -11,7 +11,7 @@ import (
 	"knowhere.cafe/src/models"
 )
 
-type ContextData struct {
+type ContextState struct {
 	FlagCfg *models.FlagConfig
 	Cfg     *models.Config
 	DB      *gorm.DB
@@ -19,6 +19,6 @@ type ContextData struct {
 	SMTP    *smtp.Client
 }
 
-func CtxData(ctx context.Context) ContextData {
-	return ctx.Value(CTX_DATA_KEY).(ContextData)
+func CtxData(ctx context.Context) ContextState {
+	return ctx.Value(CTX_STATE_KEY).(ContextState)
 }

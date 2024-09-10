@@ -1,18 +1,25 @@
 set dotenv-load
 
-default: build
+@default:
+    just --list --unsorted
 
-deps:
+@deps:
     go mod tidy
 
-build: deps
+@build: deps
     CGO_ENABLED=0 go build -o knowhere-cafe .
 
-lint: deps
+@lint: deps
     go vet
 
-test: deps
+@test: deps
     go test .
 
-watch: deps
-    CGO_ENABLED=0 go run . -- postgres://postgres:postgres@localhost:5432/knowhere
+@run: deps
+    CGO_ENABLED=0 go run . postgres://postgres:postgres@localhost:5432/knowhere
+
+@watch:
+    ls -d **/*.{go,html,js} | entr just run
+
+@fmt:
+    (which golines >> /dev/null && golines -w **/*.go) || go fmt

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-webauthn/webauthn/webauthn"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -14,17 +15,18 @@ type User struct {
 	gorm.Model
 	Email      string `gorm:"uniqueIndex"`
 	LastSeenAt time.Time
-	Roles      []string
-	InvitedBy  uint `gorm:"references:users(id)"`
+	Roles      pq.StringArray `gorm:"type:text[]"`
+	InvitedBy  uint           `gorm:"references:users(id)"`
 }
 
 type Permissions struct {
-	AppliesTo    string `gorm:"primaryKey"`
-	CanPost      bool
-	PostLimit    int
-	CanHideEmail bool
-	CanVote      bool
-	CanFlag      bool
+	AppliesTo     string `gorm:"primaryKey"`
+	Administrator bool
+	CanPost       bool
+	PostLimit     int
+	CanHideEmail  bool
+	CanVote       bool
+	CanFlag       bool
 }
 
 type Invite struct {
@@ -57,5 +59,5 @@ func (u User) WebAuthnDisplayName() string {
 }
 
 func (u User) WebAuthnCredentials() []webauthn.Credential {
-
+	return nil
 }

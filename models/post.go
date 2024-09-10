@@ -33,4 +33,6 @@ func (p Post) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	stripped.ServeHTTP(w, r)
 }
 
-func (p Post) QueryChildren()
+func (p Post) QueryChildren() []Post {
+	return nil
+}

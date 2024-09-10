@@ -2,6 +2,6 @@
 
 package shared
 
-const CTX_DATA_KEY = "DATA"
+const CTX_STATE_KEY = "STATE"
 
 const REPO_URL string = "https://github.com/rushsteve1/knowhere-cafe"

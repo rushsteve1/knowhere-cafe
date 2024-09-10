@@ -1,0 +1,31 @@
+<!DOCTYPE html5>
+
+<html lang="{{ .Cfg.Lang }}">
+    <head>
+        <title>{{ .Cfg.DisplayName }}</title>
+    </head>
+
+    <body>
+        <header>
+            <a href="https://{{ .Cfg.DomainName }}">
+                <img src="/static/img/logo.svg" />
+                <h1>{{ .Cfg.DisplayName }}</h1>
+            </a>
+        </header>
+        <nav>
+            <form action="/search" method="GET">
+                <input type="text" placeholder="Search" />
+                <input type="submit" />
+            </form>
+            <a href="/posts">Posts</a>
+            <a href="/users">Users</a>
+            <a href="/about">About</a>
+            <!-- TODO user buttons -->
+        </nav>
+        <main></main>
+        <footer>
+            <a href="/about">About</a> | <a href="/src">Code</a> | rendered at
+            {{ .Now }}
+        </footer>
+    </body>
+</html>
