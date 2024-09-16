@@ -25,6 +25,9 @@ func AuthMiddleware(next http.Handler) http.Handler {
 	return nil
 }
 
-func PermissionsMiddleware(next http.Handler, perm models.Permissions) http.Handler {
+func PermissionsMiddleware(
+	next http.Handler,
+	perm models.Permissions,
+) http.Handler {
 	return nil
 }

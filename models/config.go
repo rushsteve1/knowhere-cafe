@@ -2,12 +2,16 @@ package models
 
 import (
 	"database/sql"
+	"log/slog"
 
 	"gorm.io/gorm"
 )
 
 type FlagConfig struct {
-	DbPath string
+	DbUrl   string
+	Migrate bool
+	Cgi     bool
+	Dev     bool
 }
 
 type Config struct {
@@ -23,6 +27,8 @@ type Config struct {
 	JSONRepr          bool
 	XMLRepr           bool
 	Lang              string
+	RootName          string
+	LogLevel          slog.Level
 	SMTP              sql.Null[ConfigCredentials] `gorm:"embedded;embeddedPrefix:smtp_"`
 	IMAP              sql.Null[ConfigCredentials] `gorm:"embedded;embeddedPrefix:imap_"`
 }
@@ -33,7 +39,7 @@ type ConfigCredentials struct {
 	Password string
 }
 
-func DefaultConfig() Config {
+func defaultConfig() Config {
 	return Config{
 		BindAddr:          ":9999",
 		DisplayName:       "Knowhere Cafe",
@@ -46,18 +52,7 @@ func DefaultConfig() Config {
 		JSONRepr:          true,
 		XMLRepr:           true,
 		Lang:              "en-us",
+		RootName:          "root",
+		LogLevel:          slog.LevelWarn,
 	}
-}
-
-func QueryConfig(db *gorm.DB) (*Config, error) {
-	var cfg Config
-	res := db.Last(&cfg)
-
-	if res.RowsAffected == 0 {
-		def := DefaultConfig()
-		db.Create(&def)
-		return QueryConfig(db)
-	}
-
-	return &cfg, res.Error
 }

@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 
@@ -10,17 +9,20 @@ import (
 
 type Post struct {
 	gorm.Model
-	ReplyTo      sql.NullInt64 `gorm:"references:posts(id)"`
 	Subject      string
 	Body         string // TODO full text indexing
 	RenderedBody string
-	Points       int
-}
+	Hidden       bool
 
-type Report struct {
-	PostID uint `gorm:"references:posts(id)"`
-	UserID uint `gorm:"references:users(id)"`
-	Reason string
+	AuthorID uint
+	Author   User
+
+	ReplyToID *uint
+	ReplyTo   *Post `gorm:"foreignKey:ReplyToID"`
+
+	Children []Post `gorm:"foreignKey:ReplyToID"`
+	Reports  []Report
+	Votes    []Vote
 }
 
 // Posts implement the ServeHTTP interface allowing them to mux.
@@ -33,6 +35,15 @@ func (p Post) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	stripped.ServeHTTP(w, r)
 }
 
-func (p Post) QueryChildren() []Post {
-	return nil
+type Report struct {
+	gorm.Model
+	PostID uint `gorm:"index"`
+	UserID uint `gorm:"index"`
+	Reason string
+}
+
+type Vote struct {
+	gorm.Model
+	PostID uint `gorm:"index"`
+	UserID uint `gorm:"index"`
 }

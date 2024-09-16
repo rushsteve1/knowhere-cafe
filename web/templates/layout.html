@@ -1,8 +1,11 @@
-<!DOCTYPE html5>
-
+<!doctype html>
 <html lang="{{ .Cfg.Lang }}">
     <head>
-        <title>{{ .Cfg.DisplayName }}</title>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <title>{{ .Cfg.DisplayName }} - {{ block "title" . }}{{ end }}</title>
+        <link href="/static/style/layout.css" rel="stylesheet" />
     </head>
 
     <body>
@@ -22,10 +25,11 @@
             <a href="/about">About</a>
             <!-- TODO user buttons -->
         </nav>
-        <main></main>
+        <main>{{ block "main" . }}{{ end }}</main>
         <footer>
             <a href="/about">About</a> | <a href="/src">Code</a> | rendered at
             {{ .Now }}
         </footer>
+        <script src="/static/js/triptych.js"></script>
     </body>
 </html>

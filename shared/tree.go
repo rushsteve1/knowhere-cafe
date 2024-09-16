@@ -2,6 +2,14 @@
 
 package shared
 
+import "fmt"
+
+type ErrNotInTree[T any] struct{ needle *T }
+
+func (e ErrNotInTree[T]) Error() string {
+	return fmt.Sprintf("%+v is not in the tree", e.needle)
+}
+
 type TreeNode[T comparable] struct {
 	Self     *T
 	Parent   *TreeNode[T]
@@ -13,11 +21,13 @@ type Tree[T comparable] struct {
 	Nodes []TreeNode[T]
 }
 
-func (t Tree[T]) Find(needle *T) Maybe[TreeNode[T]] {
+func (t Tree[T]) Find(needle *T) (n TreeNode[T], err error) {
+	if needle == nil {
+	}
 	for _, node := range t.Nodes {
 		if *node.Self == *needle {
-			return Some(node)
+			return node, nil
 		}
 	}
-	return None[TreeNode[T]]()
+	return n, ErrNotInTree[T]{needle}
 }

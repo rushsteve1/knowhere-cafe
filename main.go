@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/http/cgi"
 	"os"
 	"time"
 
@@ -21,79 +22,110 @@ import (
 func main() {
 	var err error
 
+	// Start at a high log level
+	// TODO at some point of semi-stability upgrade this to a
+	slog.SetLogLoggerLevel(slog.LevelDebug)
+
 	// Make the context data object that we will fill in as we go
-	state := shared.ContextState{}
+	state := models.ContextState{}
 
 	// Load the flags
-	state.FlagCfg = loadFlags()
+	state.Flags = loadFlags()
 
 	// Connect to the database
 	gormCfg := gorm.Config{
-		Logger: shared.GormLogger{},
+		// TODO fix the gorm logger
+		// Logger:                           shared.GormLogger{},
 	}
 
-	state.DB, err = gorm.Open(postgres.Open(state.FlagCfg.DbPath), &gormCfg)
-	shared.LogOrDie("connect to database", err)
+	state.DB, err = gorm.Open(postgres.Open(state.Flags.DbUrl), &gormCfg)
+	shared.LogOrPanic("connect to database", err, "url", state.Flags.DbUrl)
 
 	// Migrate the database
-	err = state.DB.AutoMigrate(
-		&models.Config{},
-		&models.User{},
-		&models.Permissions{},
-		&models.Invite{},
-		&models.Post{},
-		&models.Report{},
-	)
-	shared.LogOrDie("migrate database", err)
+	err = models.MigrateModels(state.DB)
+	shared.LogOrPanic("migrate database", err, "url", state.Flags.DbUrl)
+
+	// The migrate flag causes the program to stop here
+	if state.Flags.Migrate {
+		return
+	}
 
 	// Load config from the database
-	state.Cfg, err = models.QueryConfig(state.DB)
-	shared.LogOrDie("load config", err)
+	cfg, err := state.Config()
+
+	// Set the log level from the config
+	if !state.Flags.Dev {
+		// TODO don't warn if the level doesn't change
+		slog.Warn("setting log level", "level", cfg.LogLevel.String())
+	}
 
 	// Connect to mail server(s)
-	if state.Cfg.IMAP.Valid {
-		state.IMAP, err = mail.IMAPConnect(state.Cfg.IMAP.V)
-		shared.LogOrDie("connect to imap", err, "host", state.Cfg.IMAP.V.Host)
+	if cfg.IMAP.Valid {
+		state.IMAP, err = mail.IMAPConnect(cfg.IMAP.V)
+		shared.LogOrPanic("connect to imap", err, "host", cfg.IMAP.V.Host)
 	}
 
-	if state.Cfg.SMTP.Valid {
-		state.SMTP, err = mail.SMTPConnect(state.Cfg.SMTP.V)
-		shared.LogOrDie("connect to smtp", err, "host", state.Cfg.SMTP.V.Host)
+	if cfg.SMTP.Valid {
+		state.SMTP, err = mail.SMTPConnect(cfg.SMTP.V)
+		shared.LogOrPanic("connect to smtp", err, "host", cfg.SMTP.V.Host)
 	}
 
-	// Start listening on the
+	// Create the context
+	mainCtx := context.WithValue(
+		context.Background(),
+		shared.CTX_STATE_KEY,
+		state,
+	)
+	
+	// Load templates
+	state.Templ = models.SetupTemplates(web.TemplateFiles(mainCtx))
 
 	// Prep the HTTP server
 	srv := http.Server{
-		Addr:              state.Cfg.BindAddr,
+		Addr:              cfg.BindAddr,
 		ReadHeaderTimeout: 3 * time.Second,
 		Handler:           web.RootHandler(),
 		ErrorLog: slog.NewLogLogger(
 			slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{}),
 			slog.LevelError,
 		),
-		BaseContext: func(_ net.Listener) context.Context {
-			ctx := context.Background()
-			context.WithValue(ctx, shared.CTX_STATE_KEY, state)
-			return ctx
-		},
+		BaseContext: func(_ net.Listener) context.Context { return mainCtx },
 	}
 
-	slog.Info("starting http server", "addr", state.Cfg.BindAddr)
+	// Record the server startup
+	res := state.DB.Create(models.NewServerStartup(cfg))
+	shared.LogOrPanic("record startup", res.Error)
 
-	// Start the HTTP server and spin
-	err = srv.ListenAndServe()
-	slog.Error("http server stopped", "error", err)
+	// Start the HTTP server
+	slog.Info("starting http server", "addr", cfg.BindAddr)
+
+	if state.Flags.Cgi {
+		// Start as CGI
+		cgi.Serve(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				r = r.WithContext(srv.BaseContext(nil))
+				srv.Handler.ServeHTTP(w, r)
+			}),
+		)
+	} else {
+		// Start the HTTP server and spin
+		err = srv.ListenAndServe()
+		slog.Error("http server stopped", "error", err)
+	}
 }
 
-func loadFlags() *models.FlagConfig {
+// loadFlags loads the CLI flags using the standard [[flag]] package
+func loadFlags() models.FlagConfig {
 	cfg := models.FlagConfig{}
 
-	// TODO flags
+	flag.BoolVar(&cfg.Migrate, "migrate", false, "migrate database then exit")
+	flag.BoolVar(&cfg.Cgi, "cgi", false, "run in Common Gateway Interface mode")
+	flag.BoolVar(&cfg.Dev, "dev", false, "enable developer mode")
+	// TODO more flags
 
 	flag.Parse()
 
-	cfg.DbPath = os.Args[1]
+	cfg.DbUrl = flag.Arg(0)
 
-	return &cfg
+	return cfg
 }

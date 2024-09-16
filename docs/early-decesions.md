@@ -7,6 +7,9 @@ It's fast *enough*, simple to use, has top class tooling, and please just
 
 Plus I'm very familiar with it and I've used it a lot.
 
+My biggest problem Go is it's sub-par typesystem.
+Generics were a huge step, but we're not all the way there.
+
 # Why Postgres?
 
 I agonized about this for longer than I should.
@@ -17,7 +20,19 @@ which is a library I really like.
 But the deciding factor was that Postgres has more features,
 is even *more* robust, and I'm already connecting to SMTP, IMAP,
 and potentially several other services.
+
 Doubling down on PG early will save me a lot of hassle later.
+It can easily be re-used for search, blob storage, caching,
+etc.
+
+SQL databases like Postgres are giant balls of mutable state.
+This is fine, this is good, the DBMS is there to handle all this.
+We can leverage that to shove state out of our program.
+
+## Why is the Config in the DB
+
+I consider the configuration of the program to be piece of mutable state.
+So like all the other mutable state it belongs in the database.
 
 # Why Passwordless?
 
@@ -39,5 +54,3 @@ I'd be locked into a small handful of email providers/software.
 See [`go.mod`](../go.mod)
 
 ## Gorm
-
-

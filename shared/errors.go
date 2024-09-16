@@ -2,34 +2,24 @@
 
 package shared
 
-type UnimplementedError struct{}
+import "log/slog"
 
-func (UnimplementedError) Error() string {
-	return "Not Implemented"
+type ErrUnimplemented struct{}
+
+func (ErrUnimplemented) Error() string {
+	return "not implemented"
 }
 
-type NilValue struct{}
+type ErrMissingState struct{}
 
-func (NilValue) Error() string {
-	return "nil value"
+func (ErrMissingState) Error() string {
+	return "missing state key"
 }
 
-type Maybe[T any] struct {
-	v *T
-}
-
-func (m Maybe[T]) Unwrap() (T, error) {
-	if m.v != nil {
-		return *m.v, nil
+func Must[T any](t T, err error) T {
+	if err != nil {
+		slog.Error("must not be an error", "error", err)
+		panic(err)
 	}
-	var v T
-	return v, NilValue{}
-}
-
-func Some[T any](v T) Maybe[T] {
-	return Maybe[T]{&v}
-}
-
-func None[T any]() Maybe[T] {
-	return Maybe[T]{nil}
+	return t
 }

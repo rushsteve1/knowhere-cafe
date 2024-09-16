@@ -1,5 +1,10 @@
 set dotenv-load
 
+# Disable CGo globally
+export CGO_ENABLED := "0"
+
+DB_URL := "postgres://postgres:postgres@localhost:5432/knowhere"
+
 @default:
     just --list --unsorted
 
@@ -7,7 +12,7 @@ set dotenv-load
     go mod tidy
 
 @build: deps
-    CGO_ENABLED=0 go build -o knowhere-cafe .
+    go build -o knowhere-cafe .
 
 @lint: deps
     go vet
@@ -16,10 +21,15 @@ set dotenv-load
     go test .
 
 @run: deps
-    CGO_ENABLED=0 go run . postgres://postgres:postgres@localhost:5432/knowhere
+    go run . --dev {{DB_URL}}
 
 @watch:
-    ls -d **/*.{go,html,js} | entr just run
+    ls **/*.go | entr just run
 
-@fmt:
-    (which golines >> /dev/null && golines -w **/*.go) || go fmt
+alias fmt := format
+@format:
+    # try to use golines, fall back to go fmt
+    (which golines >> /dev/null && golines -w -m 80 --ignore-generated **/*.go) || go fmt
+
+@migrate:
+    go run . --migrate {{DB_URL}}

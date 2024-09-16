@@ -10,9 +10,9 @@ import (
 )
 
 func IMAPConnect(cred models.ConfigCredentials) (*imapclient.Client, error) {
-	return nil, shared.UnimplementedError{}
+	return nil, shared.ErrUnimplemented{}
 }
 
 func SMTPConnect(cred models.ConfigCredentials) (*smtp.Client, error) {
-	return nil, shared.UnimplementedError{}
+	return nil, shared.ErrUnimplemented{}
 }
