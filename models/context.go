@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"net/smtp"
+	"text/template"
 
 	"github.com/emersion/go-imap/v2/imapclient"
 	"gorm.io/gorm"
@@ -14,7 +15,7 @@ type ContextState struct {
 	DB    *gorm.DB
 	IMAP  *imapclient.Client
 	SMTP  *smtp.Client
-	Templ TemplateState
+	Templ *template.Template
 }
 
 func (cs ContextState) Config() (Config, error) {

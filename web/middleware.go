@@ -1,15 +1,15 @@
 package web
 
 import (
-	"log/slog"
 	"net/http"
 
 	"knowhere.cafe/src/models"
+	"knowhere.cafe/src/shared/log"
 )
 
-func SlogMiddleware(next http.Handler) http.Handler {
+func LogMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		slog.InfoContext(
+		log.InfoContext(
 			r.Context(),
 			"http request",
 			"method", r.Method,

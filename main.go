@@ -2,17 +2,19 @@ package main
 
 import (
 	"context"
+	"expvar"
 	"flag"
 	"log/slog"
 	"net"
 	"net/http"
 	"net/http/cgi"
-	"os"
+	"text/template"
 	"time"
 
 	"knowhere.cafe/src/mail"
 	"knowhere.cafe/src/models"
 	"knowhere.cafe/src/shared"
+	"knowhere.cafe/src/shared/log"
 	"knowhere.cafe/src/web"
 
 	"gorm.io/driver/postgres"
@@ -31,6 +33,11 @@ func main() {
 
 	// Load the flags
 	state.Flags = loadFlags()
+	expvar.Publish("flags", expvar.Func(func() any { return state.Flags }))
+
+	if state.Flags.Dev {
+		log.ShowCaller = true
+	}
 
 	// Connect to the database
 	gormCfg := gorm.Config{
@@ -39,11 +46,11 @@ func main() {
 	}
 
 	state.DB, err = gorm.Open(postgres.Open(state.Flags.DbUrl), &gormCfg)
-	shared.LogOrPanic("connect to database", err, "url", state.Flags.DbUrl)
+	log.Check(err, "connect to database", "url", state.Flags.DbUrl)
 
 	// Migrate the database
 	err = models.MigrateModels(state.DB)
-	shared.LogOrPanic("migrate database", err, "url", state.Flags.DbUrl)
+	log.Check(err, "migrate database", "url", state.Flags.DbUrl)
 
 	// The migrate flag causes the program to stop here
 	if state.Flags.Migrate {
@@ -56,48 +63,49 @@ func main() {
 	// Set the log level from the config
 	if !state.Flags.Dev {
 		// TODO don't warn if the level doesn't change
-		slog.Warn("setting log level", "level", cfg.LogLevel.String())
+		log.Warn("setting log level", "level", cfg.LogLevel.String())
+		slog.SetLogLoggerLevel(cfg.LogLevel)
 	}
 
 	// Connect to mail server(s)
 	if cfg.IMAP.Valid {
 		state.IMAP, err = mail.IMAPConnect(cfg.IMAP.V)
-		shared.LogOrPanic("connect to imap", err, "host", cfg.IMAP.V.Host)
+		log.Check(err, "connect to imap", "host", cfg.IMAP.V.Host)
 	}
 
 	if cfg.SMTP.Valid {
 		state.SMTP, err = mail.SMTPConnect(cfg.SMTP.V)
-		shared.LogOrPanic("connect to smtp", err, "host", cfg.SMTP.V.Host)
+		log.Check(err, "connect to smtp", "host", cfg.SMTP.V.Host)
 	}
 
+	mainCtx := context.Background()
+
+	// Load templates
+	state.Templ = template.Must(template.ParseFS(TemplateFiles(state.Flags), "*.html"))
+
 	// Create the context
-	mainCtx := context.WithValue(
-		context.Background(),
+	mainCtx = context.WithValue(
+		mainCtx,
 		shared.CTX_STATE_KEY,
 		state,
 	)
-	
-	// Load templates
-	state.Templ = models.SetupTemplates(web.TemplateFiles(mainCtx))
 
 	// Prep the HTTP server
 	srv := http.Server{
 		Addr:              cfg.BindAddr,
 		ReadHeaderTimeout: 3 * time.Second,
-		Handler:           web.RootHandler(),
-		ErrorLog: slog.NewLogLogger(
-			slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{}),
-			slog.LevelError,
-		),
-		BaseContext: func(_ net.Listener) context.Context { return mainCtx },
+		Handler:           web.RootHandler(StaticFiles(state.Flags)),
+		BaseContext:       func(_ net.Listener) context.Context { return mainCtx },
 	}
 
 	// Record the server startup
-	res := state.DB.Create(models.NewServerStartup(cfg))
-	shared.LogOrPanic("record startup", res.Error)
+	startup := models.NewServerStartup(cfg)
+	res := state.DB.Create(&startup)
+	log.Check(res.Error, "record startup")
+	expvar.Publish("server_startup", expvar.Func(func() any { return startup }))
 
 	// Start the HTTP server
-	slog.Info("starting http server", "addr", cfg.BindAddr)
+	log.Info("starting http server", "addr", cfg.BindAddr)
 
 	if state.Flags.Cgi {
 		// Start as CGI
@@ -110,7 +118,7 @@ func main() {
 	} else {
 		// Start the HTTP server and spin
 		err = srv.ListenAndServe()
-		slog.Error("http server stopped", "error", err)
+		log.Error("http server stopped", "error", err)
 	}
 }
 

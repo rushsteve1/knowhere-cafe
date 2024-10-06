@@ -1,0 +1,12 @@
+{{ template "_layout.html" . }} {{ define "title" }}Login{{ end }} {{ define
+"main" }}
+<!-- https://passkeys.dev/docs/use-cases/bootstrapping/ -->
+<div>
+	<label for="username">Username:</label>
+	<input
+		name="username"
+		id="loginform.username"
+		autocomplete="username webauthn"
+	/>
+</div>
+{{ end }}

@@ -1,9 +1,8 @@
 package models
 
 import (
-	"log/slog"
-
 	"gorm.io/gorm"
+	"knowhere.cafe/src/shared/log"
 )
 
 // MigrateModels calls [[(gorm.DB).AutoMigrate]] and then
@@ -23,7 +22,7 @@ func MigrateModels(db *gorm.DB) error {
 	}
 
 	for i, group := range migrationGroups {
-		slog.Debug("migrating group", "group", i)
+		log.Debug("migrating", "group", i)
 
 		// I *believe* that Gorm runs migrations in order.
 		// However I don't want to rely on that, which led to the previous
@@ -56,7 +55,6 @@ func migrateConfig(db *gorm.DB) (*Config, error) {
 		cfg = defaultConfig()
 		res = db.Create(&cfg)
 	}
-	slog.SetLogLoggerLevel(cfg.LogLevel)
 	return &cfg, res.Error
 }
 

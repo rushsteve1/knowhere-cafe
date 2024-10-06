@@ -1,42 +1,35 @@
 package web
 
 import (
-	"log/slog"
+	"io/fs"
 	"net/http"
 
 	"knowhere.cafe/src/models"
 	"knowhere.cafe/src/shared"
+	"knowhere.cafe/src/shared/log"
 )
 
-func RootHandler() http.Handler {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
-		err := models.RenderFullTemplate(r.Context(), w, "index.html", "")
+func RootHandler(staticFiles fs.FS) http.Handler {
+	http.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
+		err := models.Render(r.Context(), w, "index.html", "")
 		if err != nil {
-			slog.ErrorContext(r.Context(), "index page", "error", err.Error())
+			log.ErrorContext(r.Context(), "index page", "error", err.Error())
 		}
 	})
 
-	mux.Handle("/static",
-		http.StripPrefix("/static",
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				http.FileServerFS(StaticFiles(r.Context())).ServeHTTP(w, r)
-			}),
-		),
-	)
+	http.Handle("/static", http.StripPrefix("/static", http.FileServerFS(staticFiles)))
 
-	mux.Handle("/src", http.RedirectHandler(
+	http.Handle("/src", http.RedirectHandler(
 		shared.REPO_URL,
 		http.StatusPermanentRedirect,
 	))
 
-	mux.HandleFunc("GET /post/{id}", postHandler)
+	http.HandleFunc("GET /post/{id}", postHandler)
 
 	// Apply global middleware
-	slogMux := SlogMiddleware(mux)
+	logMux := LogMiddleware(http.DefaultServeMux)
 
-	return slogMux
+	return logMux
 }
 
 func postHandler(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +39,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctxData := shared.Must(models.CtxState(r.Context()))
+	ctxData := log.Must(models.CtxState(r.Context()))
 	ctxData.DB.Find(&models.Post{}, id)
 }
 

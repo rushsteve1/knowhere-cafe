@@ -22,8 +22,7 @@ is even *more* robust, and I'm already connecting to SMTP, IMAP,
 and potentially several other services.
 
 Doubling down on PG early will save me a lot of hassle later.
-It can easily be re-used for search, blob storage, caching,
-etc.
+It can easily be re-used for search, blob storage, caching, etc.
 
 SQL databases like Postgres are giant balls of mutable state.
 This is fine, this is good, the DBMS is there to handle all this.
