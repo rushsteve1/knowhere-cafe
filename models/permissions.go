@@ -5,12 +5,11 @@ import (
 	"reflect"
 	"time"
 
-	"gorm.io/gorm"
 	"knowhere.cafe/src/shared"
 )
 
 type Permissions struct {
-	gorm.Model
+	ModelBase
 	// This can be a role, group, or user
 	AppliesTo     string `gorm:"uniqueIndex"`
 	Administrator sql.NullBool
@@ -62,9 +61,9 @@ func FlattenPermissions(roles []string, perms []Permissions) (out Permissions) {
 
 // Group of users
 type Group struct {
-	gorm.Model
+	ModelBase
 	Name   string `gorm:"index"`
-	Bio    string `gorm:"default:'';not null"`
+	Bio    string `gorm:"default:''; not null"`
 	Users  []User `gorm:"many2many:user_groups"`
 	CanHat bool
 }

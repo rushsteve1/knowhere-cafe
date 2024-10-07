@@ -10,6 +10,7 @@ DB_URL := "postgres://postgres:postgres@localhost:5432/knowhere"
 
 @deps:
 	go mod tidy
+	go mod download
 
 @build: deps
 	go build -o knowhere-cafe .
@@ -20,10 +21,10 @@ DB_URL := "postgres://postgres:postgres@localhost:5432/knowhere"
 @test: deps
 	go test .
 
-@run: deps
+run: deps
 	go run . --dev {{DB_URL}}
 
-@watch:
+watch:
 	ls **/*.go | entr -c just run
 
 alias fmt := format
@@ -31,7 +32,7 @@ alias fmt := format
 	# try to use golines, fall back to go fmt
 	(which golines >> /dev/null && golines -w -m 80 --ignore-generated **/*.go) || go fmt
 
-@migrate:
+migrate:
 	go run . --migrate {{DB_URL}}
 
 alias dbg := debug

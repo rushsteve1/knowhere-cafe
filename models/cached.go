@@ -1,6 +1,12 @@
-package shared
+package models
 
-import "time"
+import (
+	"crypto/md5"
+	"encoding/base64"
+	"time"
+
+	"knowhere.cafe/src/shared/easy"
+)
 
 type ErrCacheExpired struct{}
 
@@ -30,4 +36,17 @@ func (c Cached[T]) IsExpired() bool {
 
 func (c *Cached[T]) Expire() {
 	c.ExpiresAt = time.Now()
+}
+
+type ETag interface {
+	ETag() string
+}
+
+func formatTag(t time.Time) string {
+	sum := md5.Sum([]byte(t.Format(time.RFC3339)))
+	return base64.RawURLEncoding.EncodeToString(sum[:])
+}
+
+func (c Cached[T]) ETag() string {
+	return easy.Ternary(c.IsExpired(), "", formatTag(c.ExpiresAt))
 }

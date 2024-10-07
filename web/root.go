@@ -2,34 +2,46 @@ package web
 
 import (
 	"io/fs"
+	"log/slog"
 	"net/http"
 
 	"knowhere.cafe/src/models"
 	"knowhere.cafe/src/shared"
-	"knowhere.cafe/src/shared/log"
+	"knowhere.cafe/src/shared/easy"
 )
 
-func RootHandler(staticFiles fs.FS) http.Handler {
-	http.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
-		err := models.Render(r.Context(), w, "index.html", "")
+func RootHandler(staticFiles fs.FS) (out http.Handler) {
+	// shh this is a secret
+	mux := http.DefaultServeMux
+
+	mux.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/posts", http.StatusPermanentRedirect)
+	})
+
+	mux.HandleFunc("/posts", func(w http.ResponseWriter, r *http.Request) {
+		err := models.Render(r.Context(), w, "index.html", false, "")
 		if err != nil {
-			log.ErrorContext(r.Context(), "index page", "error", err.Error())
+			slog.ErrorContext(r.Context(), "index page", "error", err.Error())
 		}
 	})
 
-	http.Handle("/static", http.StripPrefix("/static", http.FileServerFS(staticFiles)))
+	mux.Handle(
+		"/static",
+		http.StripPrefix("/static", http.FileServerFS(staticFiles)),
+	)
 
-	http.Handle("/src", http.RedirectHandler(
+	mux.Handle("/src", http.RedirectHandler(
 		shared.REPO_URL,
 		http.StatusPermanentRedirect,
 	))
 
-	http.HandleFunc("GET /post/{id}", postHandler)
+	mux.HandleFunc("GET /post/{id}", postHandler)
 
 	// Apply global middleware
-	logMux := LogMiddleware(http.DefaultServeMux)
+	out = LogMiddleware(mux)
+	out = DBContextMiddleware(out)
 
-	return logMux
+	return out
 }
 
 func postHandler(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +51,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctxData := log.Must(models.CtxState(r.Context()))
+	ctxData := easy.Must(models.State(r.Context()))
 	ctxData.DB.Find(&models.Post{}, id)
 }
 

@@ -2,14 +2,17 @@
 
 package shared
 
-type ErrUnimplemented struct{}
+import (
+	"errors"
+	"fmt"
+)
 
-func (ErrUnimplemented) Error() string {
-	return "not implemented"
-}
+var ErrUnimplemented = errors.New("not implemented")
 
-type ErrMissingState struct{}
+var ErrMissingState = errors.New("missing state key")
 
-func (ErrMissingState) Error() string {
-	return "missing state key"
+type ErrUnknownTemplate struct{ Name string }
+
+func (e ErrUnknownTemplate) Error() string {
+	return fmt.Sprintf("unknown template '%s'", e.Name)
 }

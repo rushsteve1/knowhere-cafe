@@ -1,13 +1,20 @@
 package models
 
 import (
+	"io/fs"
+	"log/slog"
+	"reflect"
+
+	"fmt"
+
 	"gorm.io/gorm"
-	"knowhere.cafe/src/shared/log"
+
+	// MigrateModels calls [[(gorm.DB).AutoMigrate]] and then
+	// performs additional setup to get a newly created database to a usable state.
+	"time"
 )
 
-// MigrateModels calls [[(gorm.DB).AutoMigrate]] and then
-// performs additional setup to get a newly created database to a usable state.
-func MigrateModels(db *gorm.DB) error {
+func MigrateModels(db *gorm.DB, sqlFiles fs.ReadFileFS) error {
 	var err error
 
 	// Migrations are passed to Gorm in groups
@@ -22,7 +29,7 @@ func MigrateModels(db *gorm.DB) error {
 	}
 
 	for i, group := range migrationGroups {
-		log.Debug("migrating", "group", i)
+		slog.Debug("auto migration", "group", i)
 
 		// I *believe* that Gorm runs migrations in order.
 		// However I don't want to rely on that, which led to the previous
@@ -33,14 +40,32 @@ func MigrateModels(db *gorm.DB) error {
 		}
 	}
 
-	cfg, err := migrateConfig(db)
-	if err != nil {
-		return err
+	var cfg *Config
+
+	var migrationFunctions = []func(*gorm.DB) error{
+		func(db *gorm.DB) error { cfg, err = migrateConfig(db); return err },
+		func(db *gorm.DB) error { return migrateUsers(db, cfg) },
+		migratePresentationsView,
+	}
+	for i, fn := range migrationFunctions {
+		fnname := reflect.ValueOf(fn).Type().Name()
+		slog.Debug("migration func", "index", i, "func", fnname)
+
+		err := fn(db)
+		if err != nil {
+			return err
+		}
 	}
 
-	err = migrateUsers(db, cfg)
-	if err != nil {
-		return err
+	var manualMigrations = []string{}
+	for i, mmpath := range manualMigrations {
+		slog.Debug("migration file", "index", i, "file", mmpath)
+
+		qbytes, err := sqlFiles.ReadFile(mmpath)
+		if err != nil {
+			return err
+		}
+		db = db.Exec(string(qbytes))
 	}
 
 	return nil
@@ -60,7 +85,11 @@ func migrateConfig(db *gorm.DB) (*Config, error) {
 
 // migrateUsers creates the special root user and default permissions entries
 func migrateUsers(db *gorm.DB, cfg *Config) error {
-	defaultRoot := defaultRootUser(cfg)
+	defaultRoot := User{
+		Email:      fmt.Sprintf("%s@%s", cfg.RootName, cfg.DomainName),
+		LastSeenAt: time.Now(),
+	}
+
 	var root User
 	res := db.Where(User{Email: defaultRoot.Email}).
 		Attrs(defaultRoot).
@@ -85,5 +114,13 @@ func migrateUsers(db *gorm.DB, cfg *Config) error {
 		return res.Error
 	}
 
+	return nil
+}
+
+func migratePresentationsView(db *gorm.DB) error {
+	// return db.Migrator().CreateView("presentations", gorm.ViewOption{
+	// 	Replace: true,
+	// 	Query:   db, // TODO
+	// })
 	return nil
 }

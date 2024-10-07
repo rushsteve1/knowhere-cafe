@@ -4,21 +4,21 @@ import (
 	"fmt"
 	"net/http"
 
-	"gorm.io/gorm"
+	"github.com/google/uuid"
 )
 
 type Post struct {
-	gorm.Model
+	ModelBase
 	Subject      string
 	Body         string // TODO full text indexing
 	RenderedBody string
 	Hidden       bool
 
-	AuthorID uint
+	AuthorID uuid.UUID `gorm:"not null; type:uuid"`
 	Author   User
 
-	ReplyToID *uint
-	ReplyTo   *Post `gorm:"foreignKey:ReplyToID"`
+	ReplyToID *uuid.UUID `gorm:"type:uuid"`
+	ReplyTo   *Post      `gorm:"foreignKey:ReplyToID"`
 
 	Children []Post `gorm:"foreignKey:ReplyToID"`
 	Reports  []Report
@@ -36,14 +36,14 @@ func (p Post) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type Report struct {
-	gorm.Model
-	PostID uint `gorm:"index"`
-	UserID uint `gorm:"index"`
+	ModelBase
+	PostID uuid.UUID `gorm:"index; type:uuid"`
+	UserID uuid.UUID `gorm:"index; type:uuid"`
 	Reason string
 }
 
 type Vote struct {
-	gorm.Model
-	PostID uint `gorm:"index"`
-	UserID uint `gorm:"index"`
+	ModelBase
+	PostID uuid.UUID `gorm:"index; type:uuid"`
+	UserID uuid.UUID `gorm:"index; type:uuid"`
 }

@@ -1,0 +1,7 @@
+{{ template "_layout.html" . }}
+
+{{ define "title" }}{{ .Data.Email }}{{ end }}
+
+{{ define "main" }} 
+<h1>{{ .Data.Email }}</h1>
+{{ end }}

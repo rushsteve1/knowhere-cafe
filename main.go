@@ -2,31 +2,40 @@ package main
 
 import (
 	"context"
+	"embed"
 	"expvar"
 	"flag"
 	"log/slog"
 	"net"
 	"net/http"
 	"net/http/cgi"
-	"text/template"
+	"os"
 	"time"
 
 	"knowhere.cafe/src/mail"
 	"knowhere.cafe/src/models"
 	"knowhere.cafe/src/shared"
-	"knowhere.cafe/src/shared/log"
+	"knowhere.cafe/src/shared/easy"
 	"knowhere.cafe/src/web"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
+//go:embed static
+var staticFiles embed.FS
+
+//go:embed templates
+var templateFiles embed.FS
+
+//go:embed sql
+var sqlFiles embed.FS
+
 func main() {
 	var err error
 
 	// Start at a high log level
 	// TODO at some point of semi-stability upgrade this to a
-	slog.SetLogLoggerLevel(slog.LevelDebug)
 
 	// Make the context data object that we will fill in as we go
 	state := models.ContextState{}
@@ -35,22 +44,18 @@ func main() {
 	state.Flags = loadFlags()
 	expvar.Publish("flags", expvar.Func(func() any { return state.Flags }))
 
-	if state.Flags.Dev {
-		log.ShowCaller = true
-	}
-
 	// Connect to the database
 	gormCfg := gorm.Config{
 		// TODO fix the gorm logger
-		// Logger:                           shared.GormLogger{},
+		// Logger: shared.GormLogger{},
 	}
 
 	state.DB, err = gorm.Open(postgres.Open(state.Flags.DbUrl), &gormCfg)
-	log.Check(err, "connect to database", "url", state.Flags.DbUrl)
+	easy.Check(err, "connect to database", "url", state.Flags.DbUrl)
 
 	// Migrate the database
-	err = models.MigrateModels(state.DB)
-	log.Check(err, "migrate database", "url", state.Flags.DbUrl)
+	err = models.MigrateModels(state.DB, sqlFiles)
+	easy.Check(err, "migrate database", "url", state.Flags.DbUrl)
 
 	// The migrate flag causes the program to stop here
 	if state.Flags.Migrate {
@@ -60,28 +65,24 @@ func main() {
 	// Load config from the database
 	cfg, err := state.Config()
 
-	// Set the log level from the config
-	if !state.Flags.Dev {
-		// TODO don't warn if the level doesn't change
-		log.Warn("setting log level", "level", cfg.LogLevel.String())
-		slog.SetLogLoggerLevel(cfg.LogLevel)
-	}
+	// Set the logger from the flags and config
+	slog.SetDefault(setupLogger(state.Flags, cfg))
 
 	// Connect to mail server(s)
 	if cfg.IMAP.Valid {
 		state.IMAP, err = mail.IMAPConnect(cfg.IMAP.V)
-		log.Check(err, "connect to imap", "host", cfg.IMAP.V.Host)
+		easy.Check(err, "connect to imap", "host", cfg.IMAP.V.Host)
 	}
 
 	if cfg.SMTP.Valid {
 		state.SMTP, err = mail.SMTPConnect(cfg.SMTP.V)
-		log.Check(err, "connect to smtp", "host", cfg.SMTP.V.Host)
+		easy.Check(err, "connect to smtp", "host", cfg.SMTP.V.Host)
 	}
 
 	mainCtx := context.Background()
 
 	// Load templates
-	state.Templ = template.Must(template.ParseFS(TemplateFiles(state.Flags), "*.html"))
+	state.Templ = models.SetupTemplates(TemplateFiles(state.Flags))
 
 	// Create the context
 	mainCtx = context.WithValue(
@@ -101,11 +102,11 @@ func main() {
 	// Record the server startup
 	startup := models.NewServerStartup(cfg)
 	res := state.DB.Create(&startup)
-	log.Check(res.Error, "record startup")
+	easy.Check(res.Error, "record startup")
 	expvar.Publish("server_startup", expvar.Func(func() any { return startup }))
 
 	// Start the HTTP server
-	log.Info("starting http server", "addr", cfg.BindAddr)
+	slog.Info("starting http server", "addr", cfg.BindAddr)
 
 	if state.Flags.Cgi {
 		// Start as CGI
@@ -118,7 +119,7 @@ func main() {
 	} else {
 		// Start the HTTP server and spin
 		err = srv.ListenAndServe()
-		log.Error("http server stopped", "error", err)
+		slog.Error("http server stopped", "error", err)
 	}
 }
 
@@ -136,4 +137,23 @@ func loadFlags() models.FlagConfig {
 	cfg.DbUrl = flag.Arg(0)
 
 	return cfg
+}
+
+func setupLogger(flags models.FlagConfig, cfg models.Config) *slog.Logger {
+	level := cfg.LogLevel
+	if flags.Dev {
+		level = slog.LevelDebug
+	}
+
+	opts := slog.HandlerOptions{
+		AddSource: flags.Dev,
+		Level:     level,
+	}
+
+	var handler slog.Handler = slog.NewTextHandler(os.Stdout, &opts)
+	if cfg.LogHandler == "json" {
+		handler = slog.NewJSONHandler(os.Stdout, &opts)
+	}
+
+	return slog.New(handler)
 }

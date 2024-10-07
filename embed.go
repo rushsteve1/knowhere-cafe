@@ -9,18 +9,12 @@ import (
 	"os"
 
 	"knowhere.cafe/src/models"
-	"knowhere.cafe/src/shared/log"
+	"knowhere.cafe/src/shared/easy"
 )
-
-//go:embed static
-var staticFiles embed.FS
 
 func StaticFiles(flags models.FlagConfig) (out fs.FS) {
 	return devEmbed(flags, "static", staticFiles)
 }
-
-//go:embed templates
-var templateFiles embed.FS
 
 func TemplateFiles(flags models.FlagConfig) fs.FS {
 	return devEmbed(flags, "templates", templateFiles)
@@ -30,5 +24,5 @@ func devEmbed(flags models.FlagConfig, path string, or embed.FS) (out fs.FS) {
 	if flags.Dev {
 		return os.DirFS(path)
 	}
-	return log.Must(fs.Sub(or, path))
+	return easy.Must(fs.Sub(or, path))
 }

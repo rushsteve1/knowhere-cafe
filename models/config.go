@@ -3,8 +3,6 @@ package models
 import (
 	"database/sql"
 	"log/slog"
-
-	"gorm.io/gorm"
 )
 
 type FlagConfig struct {
@@ -15,7 +13,7 @@ type FlagConfig struct {
 }
 
 type Config struct {
-	gorm.Model
+	ModelBase
 	BindAddr          string
 	DisplayName       string
 	DomainName        string
@@ -29,6 +27,7 @@ type Config struct {
 	Lang              string
 	RootName          string
 	LogLevel          slog.Level
+	LogHandler        string                      // either "text" or "json"
 	SMTP              sql.Null[ConfigCredentials] `gorm:"embedded;embeddedPrefix:smtp_"`
 	IMAP              sql.Null[ConfigCredentials] `gorm:"embedded;embeddedPrefix:imap_"`
 }
@@ -54,5 +53,6 @@ func defaultConfig() Config {
 		Lang:              "en-us",
 		RootName:          "root",
 		LogLevel:          slog.LevelWarn,
+		LogHandler:        "text",
 	}
 }

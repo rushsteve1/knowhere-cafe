@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"net/smtp"
-	"text/template"
 
 	"github.com/emersion/go-imap/v2/imapclient"
 	"gorm.io/gorm"
@@ -15,7 +14,7 @@ type ContextState struct {
 	DB    *gorm.DB
 	IMAP  *imapclient.Client
 	SMTP  *smtp.Client
-	Templ *template.Template
+	Templ TemplateState
 }
 
 func (cs ContextState) Config() (Config, error) {
@@ -24,10 +23,10 @@ func (cs ContextState) Config() (Config, error) {
 	return cfg, res.Error
 }
 
-func CtxState(ctx context.Context) (ContextState, error) {
+func State(ctx context.Context) (ContextState, error) {
 	cs, ok := ctx.Value(shared.CTX_STATE_KEY).(ContextState)
 	if !ok {
-		return ContextState{}, shared.ErrMissingState{}
+		return ContextState{}, shared.ErrMissingState
 	}
 	return cs, nil
 }

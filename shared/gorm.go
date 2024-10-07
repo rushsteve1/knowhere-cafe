@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"gorm.io/gorm/logger"
-	"knowhere.cafe/src/shared/log"
 )
 
 type GormLogger struct {
@@ -35,15 +34,15 @@ func (GormLogger) LogMode(lvl logger.LogLevel) logger.Interface {
 }
 
 func (GormLogger) Info(ctx context.Context, msg string, args ...any) {
-	log.InfoContext(ctx, msg, args...)
+	slog.InfoContext(ctx, msg, args...)
 }
 
 func (GormLogger) Warn(ctx context.Context, msg string, args ...any) {
-	log.WarnContext(ctx, msg, args...)
+	slog.WarnContext(ctx, msg, args...)
 }
 
 func (GormLogger) Error(ctx context.Context, msg string, args ...any) {
-	log.ErrorContext(ctx, msg, args...)
+	slog.ErrorContext(ctx, msg, args...)
 }
 
 func (GormLogger) Trace(
