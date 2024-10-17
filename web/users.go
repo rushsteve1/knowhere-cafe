@@ -58,5 +58,15 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
+	mux.HandleFunc(
+		"/users/{id}/popup",
+		func(w http.ResponseWriter, r *http.Request) {
+			if target != "popup" {
+				http.Redirect(w, r, "/users/"+user.ID.String(), http.StatusTemporaryRedirect)
+			}
+			models.Render(ctx, w, "user_popup.html", true, user)
+		},
+	)
+
 	mux.ServeHTTP(w, r)
 }

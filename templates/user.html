@@ -3,5 +3,9 @@
 {{ define "title" }}{{ .Data.Email }}{{ end }}
 
 {{ define "main" }} 
+<img src="{{ .Data.Avatar }}" />
 <h1>{{ .Data.Email }}</h1>
+<p>
+	{{ .Data.Bio }}
+</p>
 {{ end }}
