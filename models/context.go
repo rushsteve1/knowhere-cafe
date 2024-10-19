@@ -2,9 +2,7 @@ package models
 
 import (
 	"context"
-	"net/smtp"
 
-	"github.com/emersion/go-imap/v2/imapclient"
 	"gorm.io/gorm"
 	"knowhere.cafe/src/shared"
 )
@@ -12,8 +10,6 @@ import (
 type ContextState struct {
 	Flags FlagConfig
 	DB    *gorm.DB
-	IMAP  *imapclient.Client
-	SMTP  *smtp.Client
 	Templ TemplateState
 }
 

@@ -1,8 +1,9 @@
 package models
 
 import (
-	"database/sql"
 	"log/slog"
+
+	"gorm.io/gorm"
 )
 
 type FlagConfig struct {
@@ -13,46 +14,18 @@ type FlagConfig struct {
 }
 
 type Config struct {
-	ModelBase
-	BindAddr          string
-	DisplayName       string
-	DomainName        string
-	ShowPoints        bool
-	AllowRegistration bool
-	AllowInvites      bool
-	DevEndpoints      bool
-	FeedEndpoints     bool
-	JSONRepr          bool
-	XMLRepr           bool
-	Lang              string
-	RootName          string
-	LogLevel          slog.Level
-	LogHandler        string                      // either "text" or "json"
-	SMTP              sql.Null[ConfigCredentials] `gorm:"embedded;embeddedPrefix:smtp_"`
-	IMAP              sql.Null[ConfigCredentials] `gorm:"embedded;embeddedPrefix:imap_"`
-}
-
-type ConfigCredentials struct {
-	Host     string
-	User     string
-	Password string
+	gorm.Model
+	BindAddr     string
+	DevEndpoints bool
+	LogLevel     slog.Level
+	LogHandler   string // either "text" or "json"
 }
 
 func defaultConfig() Config {
 	return Config{
-		BindAddr:          ":9999",
-		DisplayName:       "Knowhere Cafe",
-		DomainName:        "knowhere.cafe",
-		ShowPoints:        true,
-		AllowRegistration: false,
-		AllowInvites:      true,
-		DevEndpoints:      true,
-		FeedEndpoints:     true,
-		JSONRepr:          true,
-		XMLRepr:           true,
-		Lang:              "en-us",
-		RootName:          "root",
-		LogLevel:          slog.LevelWarn,
-		LogHandler:        "text",
+		BindAddr:     ":9999",
+		DevEndpoints: true,
+		LogLevel:     slog.LevelWarn,
+		LogHandler:   "text",
 	}
 }

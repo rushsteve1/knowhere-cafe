@@ -10,7 +10,7 @@ import (
 	"knowhere.cafe/src/shared/easy"
 )
 
-func LogMiddleware(next http.Handler) http.Handler {
+func SlogMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		slog.InfoContext(
 			r.Context(),
@@ -18,6 +18,7 @@ func LogMiddleware(next http.Handler) http.Handler {
 			"method", r.Method,
 			"url", r.URL.String(),
 			"peer", r.RemoteAddr,
+			"accept", r.Header.Get(ACCEPT_HEADER),
 		)
 
 		next.ServeHTTP(w, r)
@@ -25,13 +26,6 @@ func LogMiddleware(next http.Handler) http.Handler {
 }
 
 func AuthMiddleware(next http.Handler) http.Handler {
-	return nil
-}
-
-func PermissionsMiddleware(
-	next http.Handler,
-	perm models.Permissions,
-) http.Handler {
 	return nil
 }
 

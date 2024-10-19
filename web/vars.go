@@ -6,14 +6,11 @@ package web
 import (
 	"expvar"
 	_ "net/http/pprof"
-	"net/rpc"
 	"os"
 	"time"
 )
 
 func init() {
-	rpc.HandleHTTP()
-
 	expvar.Publish("environ", expvar.Func(func() any {
 		return os.Environ()
 	}))

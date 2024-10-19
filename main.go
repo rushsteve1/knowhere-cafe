@@ -12,7 +12,6 @@ import (
 	"os"
 	"time"
 
-	"knowhere.cafe/src/mail"
 	"knowhere.cafe/src/models"
 	"knowhere.cafe/src/shared"
 	"knowhere.cafe/src/shared/easy"
@@ -27,9 +26,6 @@ var staticFiles embed.FS
 
 //go:embed templates
 var templateFiles embed.FS
-
-//go:embed sql
-var sqlFiles embed.FS
 
 func main() {
 	var err error
@@ -51,11 +47,11 @@ func main() {
 	}
 
 	state.DB, err = gorm.Open(postgres.Open(state.Flags.DbUrl), &gormCfg)
-	easy.Check(err, "connect to database", "url", state.Flags.DbUrl)
+	easy.Expect(err, "connect to database", "url", state.Flags.DbUrl)
 
 	// Migrate the database
-	err = models.MigrateModels(state.DB, sqlFiles)
-	easy.Check(err, "migrate database", "url", state.Flags.DbUrl)
+	err = models.MigrateModels(state.DB)
+	easy.Expect(err, "migrate database", "url", state.Flags.DbUrl)
 
 	// The migrate flag causes the program to stop here
 	if state.Flags.Migrate {
@@ -67,17 +63,6 @@ func main() {
 
 	// Set the logger from the flags and config
 	slog.SetDefault(setupLogger(state.Flags, cfg))
-
-	// Connect to mail server(s)
-	if cfg.IMAP.Valid {
-		state.IMAP, err = mail.IMAPConnect(cfg.IMAP.V)
-		easy.Check(err, "connect to imap", "host", cfg.IMAP.V.Host)
-	}
-
-	if cfg.SMTP.Valid {
-		state.SMTP, err = mail.SMTPConnect(cfg.SMTP.V)
-		easy.Check(err, "connect to smtp", "host", cfg.SMTP.V.Host)
-	}
 
 	mainCtx := context.Background()
 
@@ -95,14 +80,14 @@ func main() {
 	srv := http.Server{
 		Addr:              cfg.BindAddr,
 		ReadHeaderTimeout: 3 * time.Second,
-		Handler:           web.RootHandler(StaticFiles(state.Flags)),
+		Handler:           web.Router(StaticFiles(state.Flags)),
 		BaseContext:       func(_ net.Listener) context.Context { return mainCtx },
 	}
 
 	// Record the server startup
 	startup := models.NewServerStartup(cfg)
 	res := state.DB.Create(&startup)
-	easy.Check(res.Error, "record startup")
+	easy.Expect(res.Error, "record startup")
 	expvar.Publish("server_startup", expvar.Func(func() any { return startup }))
 
 	// Start the HTTP server

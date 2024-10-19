@@ -5,7 +5,6 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
 
@@ -14,7 +13,7 @@ type ServerStartup struct {
 	BuildInfo debug.BuildInfo `gorm:"serializer:json"`
 	Environ   pq.StringArray  `gorm:"type:text[]; not null; default:'{}'"`
 	Cwd       string          `gorm:"not null"`
-	ConfigID  uuid.UUID       `gorm:"not null; type:uuid"`
+	ConfigID  uint            `gorm:"not null"`
 	Config    Config
 }
 
