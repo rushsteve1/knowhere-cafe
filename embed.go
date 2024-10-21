@@ -12,6 +12,12 @@ import (
 	"knowhere.cafe/src/shared/easy"
 )
 
+//go:embed static
+var staticFiles embed.FS
+
+//go:embed templates
+var templateFiles embed.FS
+
 func StaticFiles(flags models.FlagConfig) (out fs.FS) {
 	return devEmbed(flags, "static", staticFiles)
 }

@@ -7,45 +7,46 @@
 		<title>Knowhere Cafe - {{ block "title" . }}{{ end }}</title>
 
 		<script
-			up-asset
 			src="https://cdn.jsdelivr.net/npm/unpoly@3.9.2/unpoly.min.js"
 			integrity="sha256-A5+bCodk6kD33MV6ggQbH1GRh08O8lDejs7b6J7Aplw="
 			crossorigin="anonymous"
 		></script>
 		<link
-			up-asset
 			rel="stylesheet"
 			href="https://cdn.jsdelivr.net/npm/unpoly@3.9.2/unpoly.min.css"
 			integrity="sha256-3car2ohUDJpa38UQ9WCfdk9CDABlJ+abT/4AFCTOG8M="
 			crossorigin="anonymous"
 		/>
 
-		<link up-asset href="/static/style/layout.css" rel="stylesheet" />
+		<link href="/static/style/layout.css" rel="stylesheet" />
+		<script defer>
+			up.link.config.followSelectors.push("a[href]");
+			up.link.config.preloadSelectors.push("a[href]");
+			up.form.config.submitSelectors.push(["form"]);
+		</script>
 	</head>
 
 	<body>
 		<header>
-			<a href="https://{{ .Cfg.DomainName }}">
+			<a href="/" id="title">
 				<img src="/static/img/logo.svg" />
 				<h1>Knowhere Cafe</h1>
 			</a>
-		</header>
-		<nav>
 			<form action="/search" method="GET">
 				<input type="text" placeholder="Search" />
 				<input type="submit" />
 			</form>
-			<a href="/feeds">Feeds</a>
-			<a href="/wiki">Wiki</a>
-			<a href="/archive">Archive</a>
-			<!-- TODO user buttons -->
-		</nav>
+			<nav>
+				<a href="/feeds">Feeds</a>
+				<a href="/wiki">Wiki</a>
+				<a href="/archive">Archive</a>
+				<!-- TODO user buttons -->
+			</nav>
+		</header>
 		<main>{{ block "main" . }}{{ end }}</main>
 		<footer>
-			<a href="/wiki/about">About</a> | <a href="/src">Code</a> |
+			<a href="/wiki/about">About</a> | <a href="/src">Code</a>
 			<div up>rendered at {{ .Now }}</div>
 		</footer>
-		<script></script>
 	</body>
 </html>
-{{ end }}

@@ -5,3 +5,4 @@
 /knowhere-cafe
 /src
 *.log
+__debug_bin*

@@ -8,10 +8,6 @@ import (
 	"runtime"
 )
 
-func Else[T any](a T, err error, b T) T {
-	return Ternary(err == nil, a, b)
-}
-
 func Ternary[T any](t bool, a, b T) T {
 	if t {
 		return a

@@ -1,11 +1,27 @@
 body {
-    margin: 0;
-    padding: 0;
-    font-size: 14pt;
-    display: flex;
-    flex-flow: column nowrap;
+	margin: 0;
+	padding: 0;
+	font-size: 14pt;
+	display: flex;
+	flex-flow: column nowrap;
+	height: 100vh;
 }
 
 main {
-    flex-grow: 1;
+	flex-grow: 1;
+}
+
+form {
+	display: block;
+}
+
+header {
+	display: flex;
+	flex-flow: row wrap;
+	justify-content: space-around;
+	align-items: center;
+
+	#title {
+		display: flex;
+	}
 }

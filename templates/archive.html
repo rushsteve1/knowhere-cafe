@@ -2,9 +2,25 @@
 
 {{ define "main" }}
 <form method-"POST">
-	<input type=""
+	<input type="text" name="url" placeholder="Archive Page" />
+	<input type="submit" />
 </form>
 
-archive page
-
+<div id="archive-list">
+	<aside>
+		<ul>
+			{{ range .List }}
+			<li><a href="/articles/{{ .ID }}">{{ .Title }}</a></li>
+			{{ end }}
+		</ul>
+	</aside>
+	<article>
+		{{ if .Current }}
+		<h2>{{ .Current.Title }}</h2>
+		{{ .Current.Content | safe }}
+		{{ else }}
+		<p>No Article Selected</p>
+		{{ end }}
+	</article>
+</div>
 {{ end }}

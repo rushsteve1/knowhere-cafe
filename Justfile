@@ -21,7 +21,7 @@ DB_URL := "postgres://postgres:postgres@localhost:5432/knowhere"
 @test: deps
 	go test .
 
-run: deps
+@run: deps
 	go run . --dev {{DB_URL}}
 
 watch:
@@ -32,9 +32,9 @@ alias fmt := format
 	# try to use golines, fall back to go fmt
 	(which golines >> /dev/null && golines -w -m 80 --ignore-generated **/*.go) || go fmt
 
-migrate:
+@migrate:
 	go run . --migrate {{DB_URL}}
 
 alias dbg := debug
-@debug: build
-	dlv exec ./knowhere-cafe -- --dev
+@debug:
+	dlv debug -- --dev

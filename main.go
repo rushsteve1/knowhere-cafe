@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"embed"
 	"expvar"
 	"flag"
 	"log/slog"
@@ -20,12 +19,6 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
-
-//go:embed static
-var staticFiles embed.FS
-
-//go:embed templates
-var templateFiles embed.FS
 
 func main() {
 	var err error
@@ -67,7 +60,7 @@ func main() {
 	mainCtx := context.Background()
 
 	// Load templates
-	state.Templ = models.SetupTemplates(TemplateFiles(state.Flags))
+	state.Templ = models.SetupTemplates(TemplateFiles(state.Flags), state.Flags.Dev)
 
 	// Create the context
 	mainCtx = context.WithValue(

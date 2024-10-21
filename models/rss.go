@@ -13,9 +13,9 @@ import (
 type Feed struct {
 	gorm.Model
 	URL     string   `gorm:"unique"` // TODO xml parse this
-	Title   string   `xml:"title"`
-	Entries []Entry  `xml:"entry"`
-	Updated atomTime `xml:"updated"`
+	Title   string   `              xml:"title"`
+	Entries []Entry  `              xml:"entry"`
+	Updated atomTime `              xml:"updated"`
 }
 
 func parseFeed(r io.Reader) (*Feed, error) {
@@ -31,11 +31,11 @@ type Entry struct {
 	gorm.Model
 	FeedID  uint
 	URL     string   `gorm:"unique"`
-	Title   string   `xml:"title"`
-	Summary string   `xml:"summary"`
-	Body    string   `xml:"content"`
-	Updated atomTime `xml:"updated"`
-	Author  Author   `xml:"author" gorm:"embedded"`
+	Title   string   `                                xml:"title"`
+	Summary string   `                                xml:"summary"`
+	Body    string   `                                xml:"content"`
+	Updated atomTime `                                xml:"updated"`
+	Author  Author   `gorm:"embedded"                 xml:"author"`
 	Archive Archive  `gorm:"many2many:entry_archives"`
 }
 

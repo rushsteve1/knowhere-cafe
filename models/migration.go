@@ -77,7 +77,9 @@ func migrateSearch(db *gorm.DB) error {
 		return res.Error
 	}
 
-	res = db.Exec(`CREATE INDEX IF NOT EXISTS idx_archives_search ON archives USING GIN (search_vector);`)
+	res = db.Exec(
+		`CREATE INDEX IF NOT EXISTS idx_archives_search ON archives USING GIN (search_vector);`,
+	)
 	if res.Error != nil {
 		return res.Error
 	}
@@ -93,7 +95,9 @@ func migrateSearch(db *gorm.DB) error {
 		return res.Error
 	}
 
-	res = db.Exec(`CREATE INDEX IF NOT EXISTS idx_wiki_pages_search ON wiki_pages USING GIN (search_vector);`)
+	res = db.Exec(
+		`CREATE INDEX IF NOT EXISTS idx_wiki_pages_search ON wiki_pages USING GIN (search_vector);`,
+	)
 	if res.Error != nil {
 		return res.Error
 	}
@@ -109,7 +113,9 @@ func migrateSearch(db *gorm.DB) error {
 		return res.Error
 	}
 
-	res = db.Exec(`CREATE INDEX IF NOT EXISTS idx_entries_search ON entries USING GIN (search_vector);`)
+	res = db.Exec(
+		`CREATE INDEX IF NOT EXISTS idx_entries_search ON entries USING GIN (search_vector);`,
+	)
 	if res.Error != nil {
 		return res.Error
 	}
@@ -125,7 +131,9 @@ func migrateSearch(db *gorm.DB) error {
 		return res.Error
 	}
 
-	res = db.Exec(`CREATE INDEX IF NOT EXISTS idx_notes_search ON notes USING GIN (search_vector);`)
+	res = db.Exec(
+		`CREATE INDEX IF NOT EXISTS idx_notes_search ON notes USING GIN (search_vector);`,
+	)
 	if res.Error != nil {
 		return res.Error
 	}

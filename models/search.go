@@ -3,6 +3,8 @@ package models
 import (
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 	"time"
 
 	"gorm.io/gorm"
@@ -17,24 +19,30 @@ type SitePrefs struct {
 
 type Search struct {
 	gorm.Model
-	Terms string
+	Terms   string
+	Results []SearchResult `gorm:"type:jsonb;serializer:json"`
 }
 
-func (s Search) Title() string { return fmt.Sprintf("Search for \"%s\"", s.Terms) }
-func (s Search) Body() string { return "" }
-func (s Search) PublishedAt() time.Time { return time.Now() }
-func (s Search) Markdown(w io.Writer) error {
-	_, err := io.WriteString(w, "# " + s.Title())
-	if err != nil {
-		return err
+func NewSearch(params url.Values) Search {
+	return Search{
+		Terms: params.Get("terms"),
 	}
-	_, err = io.WriteString(w, s.PublishedAt().Format(time.RFC3339))
-	if err != nil {
-		return err
-	}
-	_, err = io.WriteString(w, s.Body())
-	if err != nil {
-		return err
-	}
-	return nil
+}
+
+func (s Search) TemplateName() string { return "search.html" }
+
+func (s Search) TitleString() string        { return fmt.Sprintf("Search for \"%s\"", s.Terms) }
+func (s Search) BodyString() string         { return "" }
+func (s Search) PublishedAt() time.Time     { return time.Now() }
+func (s Search) Markdown(w io.Writer) error { return simpleMarkdown(w, s) }
+func (s Search) Etag() string               { return timeHash(&s.UpdatedAt) }
+func (s Search) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	formatRenderHandler(w, r, s.TemplateName(), s)
+}
+
+type SearchResult struct {
+	gorm.Model
+	URL     string
+	Title   string
+	Summary string
 }

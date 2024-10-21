@@ -1,3 +1,13 @@
 {{ define "title" }}Search{{ end }}
 
-{{ define "main" }} search page {{ end }}
+{{ define "main" }}
+<p>
+search page
+</p>
+
+<ul id="#results">
+	{{ range .Data.Results }}
+		<h3>thing</h3>
+	{{ end }}
+</ul>
+{{ end }}
