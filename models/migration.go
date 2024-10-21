@@ -70,7 +70,7 @@ func migrateSearch(db *gorm.DB) error {
 		`ALTER TABLE archives
 		ADD COLUMN IF NOT EXISTS search_vector tsvector
 		GENERATED ALWAYS AS
-			(to_tsvector('english', coalesce(title, '') || coalesce(reader, '')))
+			(to_tsvector('english', coalesce(title, '') || coalesce(text_content, '')))
 		STORED;`,
 	)
 	if res.Error != nil {

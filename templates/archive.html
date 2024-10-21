@@ -1,26 +1,41 @@
 {{ define "title" }}Archive{{ end }}
 
 {{ define "main" }}
-<form method-"POST">
-	<input type="text" name="url" placeholder="Archive Page" />
-	<input type="submit" />
-</form>
-
 <div id="archive-list">
 	<aside>
+		<form action="/archive/" method="POST">
+			<input type="url" name="url" placeholder="Archive Page" />
+			<input type="submit" />
+		</form>
 		<ul>
-			{{ range .List }}
-			<li><a href="/articles/{{ .ID }}">{{ .Title }}</a></li>
+			{{ range .Data.List }}
+			<li>
+				<a href="/archive/{{ .ID }}">
+					<h3>{{ .Title }}</h3>
+					<p>{{ .Excerpt }}</p>
+				</a>
+			</li>
 			{{ end }}
 		</ul>
 	</aside>
 	<article>
-		{{ if .Current }}
-		<h2>{{ .Current.Title }}</h2>
-		{{ .Current.Content | safe }}
-		{{ else }}
-		<p>No Article Selected</p>
-		{{ end }}
+		{{ with .Data.Current }}
+		<div id="titleline">
+			<h2>{{ .Title }}</h2>
+			<div>
+				<a href="{{ .URL }}" target="_blank">
+					<img src="/static/icons/airplay.svg" alt="original" />
+				</a>
+				<a href="/archive/{{ .ID }}/html" download="{{ .Title }}.html">
+					<img src="/static/icons/download.svg" alt="download" />
+				</a>
+			</div>
+		</div>
+		<div id="byline">
+			<author>{{ .Byline }}</author>
+			<time>{{ .PublishedAt }}</time>
+		</div>
+		{{ .Content | safe }} {{ end }}
 	</article>
 </div>
 {{ end }}

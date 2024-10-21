@@ -74,7 +74,7 @@ func main() {
 		Addr:              cfg.BindAddr,
 		ReadHeaderTimeout: 3 * time.Second,
 		Handler:           web.Router(StaticFiles(state.Flags)),
-		BaseContext:       func(_ net.Listener) context.Context { return mainCtx },
+		BaseContext: func(_ net.Listener) context.Context { return mainCtx },
 	}
 
 	// Record the server startup

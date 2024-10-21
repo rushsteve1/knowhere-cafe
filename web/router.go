@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
 
+	"gorm.io/gorm/clause"
 	"knowhere.cafe/src/models"
 	"knowhere.cafe/src/shared"
 	"knowhere.cafe/src/shared/easy"
@@ -15,6 +17,7 @@ import (
 
 func checkServerError(w http.ResponseWriter, err error) bool {
 	if err != nil {
+		slog.Error("http response error", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return true
 	}
@@ -49,7 +52,7 @@ func Router(staticFiles fs.FS) (out http.Handler) {
 		models.NewSearch(r.URL.Query()).ServeHTTP(w, r)
 	})
 
-	mux.HandleFunc("/archive/", archiveHandler)
+	mux.HandleFunc("/archive/", ArchiveHandler)
 
 	// Apply global middleware
 	return Apply(mux,
@@ -59,7 +62,7 @@ func Router(staticFiles fs.FS) (out http.Handler) {
 	)
 }
 
-func archiveHandler(w http.ResponseWriter, r *http.Request) {
+func ArchiveHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	state := easy.Must(models.State(ctx))
 
@@ -78,11 +81,11 @@ func archiveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	mux := http.NewServeMux()
-	
-	mux.Handle("GET /archive", al)
+
+	mux.Handle("GET /archive/{$}", al)
 
 	mux.HandleFunc(
-		"POST /archive",
+		"POST /archive/{$}",
 		func(w http.ResponseWriter, r *http.Request) {
 			formUrl, err := url.Parse(r.FormValue("url"))
 			if checkServerError(w, err) {
@@ -94,7 +97,9 @@ func archiveHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			res := state.DB.Create(&archive)
+			slog.Debug("inserting new archive", "URL", archive.URL)
+			res = state.DB.Clauses(clause.OnConflict{UpdateAll: true}).
+				Create(&archive)
 			if checkServerError(w, res.Error) {
 				return
 			}
@@ -103,7 +108,7 @@ func archiveHandler(w http.ResponseWriter, r *http.Request) {
 				w,
 				r,
 				fmt.Sprintf("/archive/%d", archive.ID),
-				http.StatusTemporaryRedirect,
+				http.StatusSeeOther,
 			)
 		},
 	)
@@ -117,17 +122,31 @@ func archiveHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			res := state.DB.First(al.Current, id)
+			res := state.DB.First(&al.Current, id)
 			if checkServerError(w, res.Error) {
 				return
 			}
 
-			if res.RowsAffected == 0 {
-				http.Error(w, "article not found", http.StatusNotFound)
+			al.ServeHTTP(w, r)
+		},
+	)
+
+	mux.HandleFunc(
+		"GET /archive/{id}/html",
+		func(w http.ResponseWriter, r *http.Request) {
+			idstr := r.PathValue("id")
+			id, err := strconv.Atoi(idstr)
+			if checkServerError(w, err) {
 				return
 			}
 
-			al.ServeHTTP(w, r)
+			var a models.Archive
+			res := state.DB.First(&a, id)
+			if checkServerError(w, res.Error) {
+				return
+			}
+
+			w.Write([]byte(a.HTML))
 		},
 	)
 

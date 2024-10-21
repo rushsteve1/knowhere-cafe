@@ -2,20 +2,21 @@ package models
 
 import (
 	"cmp"
+	"html/template"
 	"io"
 	"io/fs"
 	"log/slog"
 	"slices"
 	"strings"
-	"html/template"
 	"time"
 
 	"knowhere.cafe/src/shared"
 )
 
 const LAYOUT_PATH = "_layout.html"
+const MAIN_PATH = "_main.html"
 
-var ignored = []string{LAYOUT_PATH}
+var ignored = []string{LAYOUT_PATH, MAIN_PATH}
 
 type TemplateState struct {
 	inner map[string]*template.Template
@@ -32,13 +33,15 @@ var funcs = template.FuncMap{
 }
 
 func (ts TemplateState) setupTemplate(templateFiles fs.FS, path string) error {
-	t, err := template.ParseFS(templateFiles, LAYOUT_PATH, path)
+	t, err := template.New("").
+		Funcs(funcs).
+		ParseFS(templateFiles, LAYOUT_PATH, MAIN_PATH, path)
 	if err != nil {
 		slog.Error("template parse error", "error", err)
 		return err
 	}
 
-	ts.inner[path] = t.Funcs(funcs)
+	ts.inner[path] = t
 	return nil
 }
 
@@ -100,6 +103,10 @@ func (ts TemplateState) Render(
 	t, ok := ts.inner[path]
 	if !ok {
 		return shared.ErrUnknownTemplate{Name: path}
+	}
+	
+	if target == "main" {
+		target = MAIN_PATH
 	}
 
 	return t.ExecuteTemplate(wr, target, td)

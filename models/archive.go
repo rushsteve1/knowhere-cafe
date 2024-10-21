@@ -1,10 +1,11 @@
 package models
 
 import (
+	"bytes"
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
@@ -26,9 +27,9 @@ type Archive struct {
 	Image         string
 	Favicon       string
 	PublishedTime *time.Time
-	Read          bool
-	URL           string `gorm:"unique"`
-	HTML          sql.NullString
+	Read          bool   `gorm:"not null; default:false"`
+	URL           string `gorm:"not null; unique"`
+	HTML          string
 	Notes         []Note `gorm:"many2many:archive_notes"`
 }
 
@@ -38,13 +39,24 @@ func NewArchive(ctx context.Context, u *url.URL) (out Archive, err error) {
 		return out, err
 	}
 
-	arc := obelisk.Archiver{}
-	doc, _, err := arc.Archive(ctx, obelisk.Request{Input: resp.Body})
+	buf := bytes.Buffer{}
+	reader := io.TeeReader(resp.Body, &buf)
+
+	article, err := readability.FromReader(reader, u)
 	if err != nil {
 		return out, err
 	}
 
-	article, err := readability.FromReader(resp.Body, u)
+	arc := obelisk.Archiver{
+		DisableJS:     true,
+		DisableEmbeds: true,
+		DisableMedias: true,
+	}
+	arc.Validate()
+	doc, _, err := arc.Archive(
+		ctx,
+		obelisk.Request{URL: u.String(), Input: &buf},
+	)
 	if err != nil {
 		return out, err
 	}
@@ -61,7 +73,7 @@ func NewArchive(ctx context.Context, u *url.URL) (out Archive, err error) {
 		Image:         article.Image,
 		Favicon:       article.Favicon,
 		PublishedTime: article.PublishedTime,
-		HTML:          sql.NullString{String: string(doc), Valid: true},
+		HTML:          string(doc),
 	}, nil
 }
 
@@ -82,6 +94,7 @@ type ArchiveList struct {
 }
 
 func (al ArchiveList) TemplateName() string { return "archive.html" }
+
 func (al ArchiveList) TitleString() string { return fmt.Sprintf("Archives page %d", al.Page) }
 func (al ArchiveList) BodyString() string  { return "" }
 func (al ArchiveList) PublishedAt() time.Time {
@@ -99,6 +112,7 @@ func (al ArchiveList) Markdown(
 	return simpleMarkdown(w, al)
 }
 func (al ArchiveList) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	slog.Debug("serve archive list")
 	formatRenderHandler(w, r, al.TemplateName(), al)
 }
 func (al ArchiveList) Etag() string {

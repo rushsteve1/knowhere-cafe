@@ -60,6 +60,11 @@ func formatRenderHandler(
 	target := r.Header.Get(UP_TARGET_HEADER)
 	slog.Debug("response target", "target", target)
 
+	// Force this to fix a bug
+	if len(target) > 0 {
+		format = html_mime
+	}
+
 	formats := strings.Split(format, ",")
 
 	// Go through every possible value in request order

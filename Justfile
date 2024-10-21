@@ -37,4 +37,4 @@ alias fmt := format
 
 alias dbg := debug
 @debug:
-	dlv debug -- --dev
+	dlv debug -- --dev {{DB_URL}}

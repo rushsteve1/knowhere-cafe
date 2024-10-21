@@ -4,7 +4,7 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-		<title>Knowhere Cafe - {{ block "title" . }}{{ end }}</title>
+		<title>{{ block "title" . }}{{ end }} - Knowhere Cafe</title>
 
 		<script
 			src="https://cdn.jsdelivr.net/npm/unpoly@3.9.2/unpoly.min.js"
@@ -24,11 +24,13 @@
 			up.link.config.preloadSelectors.push("a[href]");
 			up.form.config.submitSelectors.push(["form"]);
 		</script>
+
+		{{ block "head" . }}{{ end }}
 	</head>
 
 	<body>
 		<header>
-			<a href="/" id="title">
+			<a href="/" id="title" up-follow>
 				<img src="/static/img/logo.svg" />
 				<h1>Knowhere Cafe</h1>
 			</a>
@@ -46,7 +48,7 @@
 		<main>{{ block "main" . }}{{ end }}</main>
 		<footer>
 			<a href="/wiki/about">About</a> | <a href="/src">Code</a>
-			<div up>rendered at {{ .Now }}</div>
+			<div id="render-time" up-hungry>Rendered at {{ .Now }}</div>
 		</footer>
 	</body>
 </html>

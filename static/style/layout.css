@@ -1,4 +1,20 @@
+:root {
+	--dark: 0;
+	--text: black;
+	--background: white;
+	--accent: lightgrey;
+}
+
+@media (prefers-color-scheme: dark) {
+	--dark: 1;
+	--text: white;
+	--background: black;
+	--accent: slategrey;
+}
+
 body {
+	color: var(--text);
+	background-color: var(--background);
 	margin: 0;
 	padding: 0;
 	font-size: 14pt;
@@ -15,6 +31,10 @@ form {
 	display: block;
 }
 
+pre {
+	background-color: var(--accent);
+}
+
 header {
 	display: flex;
 	flex-flow: row wrap;
@@ -24,4 +44,28 @@ header {
 	#title {
 		display: flex;
 	}
+}
+
+#archive-list {
+	display: flex;
+	flex-flow: row nowrap;
+	justify-content: space-between;
+
+	aside {
+		min-width: 20rem;
+		
+		ul {
+			list-style: none;
+		}
+	}
+
+	#titleline {
+		display: flex;
+		flex-flow: row nowrap;
+		align-items: center;
+	}
+}
+
+@media screen and (min-width: 768px) {
+	
 }
