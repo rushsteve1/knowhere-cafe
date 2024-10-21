@@ -38,3 +38,11 @@ alias fmt := format
 alias dbg := debug
 @debug:
 	dlv debug -- --dev {{DB_URL}}
+
+
+VENDOR_FOLDER := "static/vendor"
+
+@vendor-unpoly:
+	mkdir -p {{VENDOR_FOLDER}}
+	curl  -o {{VENDOR_FOLDER}}/unpoly.min.js https://cdn.jsdelivr.net/npm/unpoly@3.9.2/unpoly.min.js
+	curl  -o {{VENDOR_FOLDER}}/unpoly.min.css https://cdn.jsdelivr.net/npm/unpoly@3.9.2/unpoly.min.css

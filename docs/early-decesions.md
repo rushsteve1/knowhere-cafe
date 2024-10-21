@@ -18,8 +18,7 @@ I **really** wanted to use
 which is a library I really like.
 
 But the deciding factor was that Postgres has more features,
-is even *more* robust, and I'm already connecting to SMTP, IMAP,
-and potentially several other services.
+is even *more* robust, and I'm already connecting to several other services.
 
 Doubling down on PG early will save me a lot of hassle later.
 It can easily be re-used for search, blob storage, caching, etc.
@@ -40,16 +39,33 @@ Oh how I wish I could go back in time and remake the web
 
 Passwords were never a good idea.
 They're a poor imitation of proper cryptography practices.
-So instead I chose to rely on newer browser features such as Passkeys,
-or falling back to Magic Links sent via email.
 
-# Why not JMAP?
-
-I did look into this, but there's just not a lot of support for it anywhere.
-I'd be locked into a small handful of email providers/software.
-
-# Dependencies
+# Dependency Choices
 
 See [`go.mod`](../go.mod)
 
+## Go Standard Library
+
+I'm counting /x/ in here because it's "official" too.
+
 ## Gorm
+
+This one I'm still mixed on but the end choice was made because I
+***HATE*** migrations systems. No I don't have a better solution.
+
+So instead I rely on the worse solution of Gorm automigrate and writing
+a pile of SQL inside Go code. Maybe I'll clean it up someday...
+
+## Readability and Obelisk
+
+Both of these come from the wonderful [Shiori project](https://github.com/go-shiori/shiori)
+and I am happy to say that they both work great!
+
+## Unpoly
+
+For you HTMX fans, try out Unpoly.
+At under 50kb from a cached CDN, it's pretty small.
+It's a wonderful progressive-enhancement framework that lets me easily build
+simple and snappy websites.
+
+Unpoly is loaded from JsDelivr

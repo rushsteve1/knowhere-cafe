@@ -30,7 +30,7 @@ func Router(staticFiles fs.FS) (out http.Handler) {
 	// shh this is a secret
 	mux := http.DefaultServeMux
 
-	mux.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/search", http.StatusPermanentRedirect)
 	})
 

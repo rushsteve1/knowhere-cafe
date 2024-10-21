@@ -45,7 +45,7 @@ func (ts TemplateState) setupTemplate(templateFiles fs.FS, path string) error {
 	return nil
 }
 
-func SetupTemplates(templateFiles fs.FS, dev bool) TemplateState {
+func SetupTemplates(templateFiles fs.FS, dev bool) *TemplateState {
 	state := TemplateState{
 		inner: make(map[string]*template.Template, 10),
 		dev:   dev,
@@ -71,7 +71,7 @@ func SetupTemplates(templateFiles fs.FS, dev bool) TemplateState {
 		},
 	)
 
-	return state
+	return &state
 }
 
 type TemplateData struct {
@@ -104,7 +104,10 @@ func (ts TemplateState) Render(
 	if !ok {
 		return shared.ErrUnknownTemplate{Name: path}
 	}
-	
+
+	// This is a workaround because the `main` template DOES exist in _layout.html
+	// and WILL be called by Unpoly but we actually don't want to use it
+	// and specifically want to use _main.html
 	if target == "main" {
 		target = MAIN_PATH
 	}

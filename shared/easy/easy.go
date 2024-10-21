@@ -23,7 +23,7 @@ func Inspect[T any](v T, args ...any) T {
 }
 
 func Must[T any](t T, err error, args ...any) T {
-	msg, args := PopOr(args, "must not be an error")
+	msg, args := PopOr(args, "must")
 
 	_, file, line, _ := runtime.Caller(1)
 	args = append(args, "caller", fmt.Sprintf("%s:%d", file, line))
@@ -39,7 +39,7 @@ func Must[T any](t T, err error, args ...any) T {
 }
 
 func Expect(err error, args ...any) {
-	msg, args := PopOr(args, "checking for an error")
+	msg, args := PopOr(args, "check")
 
 	_, file, line, _ := runtime.Caller(1)
 	args = append(args, "caller", fmt.Sprintf("%s:%d", file, line))

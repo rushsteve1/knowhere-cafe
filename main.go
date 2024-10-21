@@ -12,12 +12,12 @@ import (
 	"time"
 
 	"knowhere.cafe/src/models"
-	"knowhere.cafe/src/shared"
 	"knowhere.cafe/src/shared/easy"
 	"knowhere.cafe/src/web"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"tailscale.com/tsnet"
 )
 
 func main() {
@@ -62,10 +62,13 @@ func main() {
 	// Load templates
 	state.Templ = models.SetupTemplates(TemplateFiles(state.Flags), state.Flags.Dev)
 
+	// Load Tailscale
+	state.Tsnet = setupTsnet()
+
 	// Create the context
 	mainCtx = context.WithValue(
 		mainCtx,
-		shared.CTX_STATE_KEY,
+		models.STATE_CTX_KEY,
 		state,
 	)
 
@@ -74,7 +77,7 @@ func main() {
 		Addr:              cfg.BindAddr,
 		ReadHeaderTimeout: 3 * time.Second,
 		Handler:           web.Router(StaticFiles(state.Flags)),
-		BaseContext: func(_ net.Listener) context.Context { return mainCtx },
+		BaseContext:       func(_ net.Listener) context.Context { return mainCtx },
 	}
 
 	// Record the server startup
@@ -96,7 +99,8 @@ func main() {
 		)
 	} else {
 		// Start the HTTP server and spin
-		err = srv.ListenAndServe()
+		l := easy.Must(state.Tsnet.Listen("tcp", ":9999"))
+		err = srv.Serve(l)
 		slog.Error("http server stopped", "error", err)
 	}
 }
@@ -134,4 +138,10 @@ func setupLogger(flags models.FlagConfig, cfg models.Config) *slog.Logger {
 	}
 
 	return slog.New(handler)
+}
+
+func setupTsnet() *tsnet.Server {
+	s := new(tsnet.Server)
+	s.Hostname = "knowhere"
+	return s
 }

@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"knowhere.cafe/src/models"
-	"knowhere.cafe/src/shared"
 	"knowhere.cafe/src/shared/easy"
 )
 
@@ -38,15 +37,27 @@ func SlogMiddleware(next http.Handler) http.Handler {
 }
 
 func AuthMiddleware(next http.Handler) http.Handler {
-	return nil
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		state := easy.Must(models.State(ctx))
+
+		lc := easy.Must(state.Tsnet.LocalClient())
+		who := easy.Must(lc.WhoIs(ctx, r.RemoteAddr))
+
+		ctx = context.WithValue(ctx, models.AUTH_CTX_KEY, who)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func DBContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		state := easy.Must(models.State(ctx))
+
 		state.DB = state.DB.WithContext(ctx)
-		ctx = context.WithValue(ctx, shared.CTX_STATE_KEY, state)
+
+		ctx = context.WithValue(ctx, models.STATE_CTX_KEY, state)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

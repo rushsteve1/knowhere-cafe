@@ -2,7 +2,6 @@
 
 package shared
 
-const CTX_STATE_KEY = "STATE"
 
 const VARY_HEADER = "Vary"
 const ETAG_HEADER = "ETag"

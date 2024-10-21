@@ -54,6 +54,8 @@ func formatRenderHandler(
 ) {
 	ctx := r.Context()
 	state := easy.Must(State(ctx))
+	auth := easy.Must(Auth(ctx)) != nil
+	auth = auth || state.Flags.Dev
 
 	format := r.Header.Get(ACCEPT_HEADER)
 	slog.Debug("response format", "format", format)
@@ -73,7 +75,7 @@ func formatRenderHandler(
 		if prefixAny(f, html_mime) {
 			w.Header().Set(CONTENT_TYPE_HEADER, html_mime)
 			easy.Expect(
-				state.Templ.Render(w, name, target, state.Flags.Dev, data),
+				state.Templ.Render(w, name, target, auth, data),
 			)
 			return
 		} else if prefixAny(f, json_mime) {

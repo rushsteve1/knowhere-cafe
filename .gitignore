@@ -6,3 +6,6 @@
 /src
 *.log
 __debug_bin*
+
+/static/vendor
+/static/icons

@@ -8,8 +8,8 @@ import (
 )
 
 var ErrUnimplemented = errors.New("not implemented")
-
 var ErrMissingState = errors.New("missing state key")
+var ErrNotAuth = errors.New("not authorized over tailscale")
 
 type ErrUnknownTemplate struct{ Name string }
 
