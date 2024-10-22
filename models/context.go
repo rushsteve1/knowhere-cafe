@@ -38,10 +38,24 @@ const AUTH_CTX_KEY = "AUTH"
 
 type ContextAuth *apitype.WhoIsResponse
 
-func Auth(ctx context.Context) (who *ContextAuth, err error) {
-	who, ok := ctx.Value(AUTH_CTX_KEY).(*ContextAuth)
+func Auth(ctx context.Context) (who ContextAuth, err error) {
+	who, ok := ctx.Value(AUTH_CTX_KEY).(ContextAuth)
 	if !ok {
 		return nil, shared.ErrNotAuth
 	}
 	return who, nil
+}
+
+func IsAuthd(ctx context.Context) bool {
+	who, err := Auth(ctx)
+	if err != nil {
+		return false
+	}
+
+	state, err := State(ctx)
+	if err != nil {
+		return false
+	}
+
+	return state.Flags.Dev || (who != nil)
 }

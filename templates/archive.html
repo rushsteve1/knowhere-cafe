@@ -1,6 +1,4 @@
-{{ define "title" }}Archive{{ end }}
-
-{{ define "main" }}
+{{ define "title" }}Archive{{ end }} {{ define "main" }}
 <div id="archive-list">
 	<aside>
 		<form action="/archive/" method="POST">
@@ -29,6 +27,17 @@
 				<a href="/archive/{{ .ID }}/html" download="{{ .Title }}.html">
 					<img src="/static/icons/download.svg" alt="download" />
 				</a>
+				{{ if $.Auth }}
+				<form method="PATCH" action="/archive/{{ .ID }}">
+					{{ if .Read }}
+					<input type="hidden" name="read" value="true" />
+					<input type="submit" value="Mark Read" />
+					{{ else }}
+					<input type="hidden" name="read" value="true" />
+					<input type="submit" value="Mark Read" />
+					{{ end }}
+				</form>
+				{{ end }}
 			</div>
 		</div>
 		<div id="byline">

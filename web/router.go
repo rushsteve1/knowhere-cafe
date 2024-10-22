@@ -1,17 +1,16 @@
 package web
 
 import (
-	"fmt"
 	"io"
 	"io/fs"
 	"log/slog"
 	"net/http"
-	"net/url"
-	"strconv"
+	"net/rpc"
 
-	"gorm.io/gorm/clause"
+	_ "expvar"
+	_ "net/http/pprof"
+
 	"knowhere.cafe/src/models"
-	"knowhere.cafe/src/shared"
 	"knowhere.cafe/src/shared/easy"
 )
 
@@ -27,11 +26,21 @@ func checkServerError(w http.ResponseWriter, err error) bool {
 const REPO_URL string = "https://github.com/rushsteve1/knowhere-cafe"
 
 func Router(staticFiles fs.FS) (out http.Handler) {
-	// shh this is a secret
-	mux := http.DefaultServeMux
+	// Call this just to get it setup now too
+	rpc.HandleHTTP()
+
+	// We don't use the default handler
+	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/search", http.StatusPermanentRedirect)
+		if r.URL.Path == "/" {
+			http.Redirect(w, r, "/search", http.StatusPermanentRedirect)
+			return
+		}
+
+		// If nothing matched and we ended up here try the default mux
+		// but require authentication for all of its endpoints
+		RequireAuth(http.DefaultServeMux).ServeHTTP(w, r)
 	})
 
 	mux.Handle(
@@ -48,6 +57,11 @@ func Router(staticFiles fs.FS) (out http.Handler) {
 		http.RedirectHandler(REPO_URL, http.StatusPermanentRedirect),
 	)
 
+	mux.Handle(
+		"GET /tailscale",
+		RequireAuth(http.HandlerFunc(tailscaleHandler)),
+	)
+
 	mux.HandleFunc("GET /search", func(w http.ResponseWriter, r *http.Request) {
 		models.NewSearch(r.URL.Query()).ServeHTTP(w, r)
 	})
@@ -57,98 +71,28 @@ func Router(staticFiles fs.FS) (out http.Handler) {
 	// Apply global middleware
 	return Apply(mux,
 		SlogMiddleware,
-		GzipMiddleware,
+		AuthMiddleware,
 		DBContextMiddleware,
+		GzipMiddleware,
 	)
 }
 
-func ArchiveHandler(w http.ResponseWriter, r *http.Request) {
+func tailscaleHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	state := easy.Must(models.State(ctx))
-
-	page, err := strconv.Atoi(r.URL.Query().Get("page"))
-	if err != nil {
-		page = 0
-	}
-
-	al := models.ArchiveList{Page: page}
-	res := state.DB.Limit(shared.LIMIT).
-		Offset(page * shared.LIMIT).
-		Order("updated_at DESC").
-		Find(&al.List)
-	if checkServerError(w, res.Error) {
+	state, err := models.State(ctx)
+	if checkServerError(w, err) {
 		return
 	}
 
-	mux := http.NewServeMux()
+	lc, err := state.Tsnet.LocalClient()
+	if checkServerError(w, err) {
+		return
+	}
 
-	mux.Handle("GET /archive/{$}", al)
+	status, err := lc.Status(ctx)
+	if checkServerError(w, err) {
+		return
+	}
 
-	mux.HandleFunc(
-		"POST /archive/{$}",
-		func(w http.ResponseWriter, r *http.Request) {
-			formUrl, err := url.Parse(r.FormValue("url"))
-			if checkServerError(w, err) {
-				return
-			}
-
-			archive, err := models.NewArchive(r.Context(), formUrl)
-			if checkServerError(w, err) {
-				return
-			}
-
-			slog.Debug("inserting new archive", "URL", archive.URL)
-			res = state.DB.Clauses(clause.OnConflict{UpdateAll: true}).
-				Create(&archive)
-			if checkServerError(w, res.Error) {
-				return
-			}
-
-			http.Redirect(
-				w,
-				r,
-				fmt.Sprintf("/archive/%d", archive.ID),
-				http.StatusSeeOther,
-			)
-		},
-	)
-
-	mux.HandleFunc(
-		"GET /archive/{id}",
-		func(w http.ResponseWriter, r *http.Request) {
-			idstr := r.PathValue("id")
-			id, err := strconv.Atoi(idstr)
-			if checkServerError(w, err) {
-				return
-			}
-
-			res := state.DB.First(&al.Current, id)
-			if checkServerError(w, res.Error) {
-				return
-			}
-
-			al.ServeHTTP(w, r)
-		},
-	)
-
-	mux.HandleFunc(
-		"GET /archive/{id}/html",
-		func(w http.ResponseWriter, r *http.Request) {
-			idstr := r.PathValue("id")
-			id, err := strconv.Atoi(idstr)
-			if checkServerError(w, err) {
-				return
-			}
-
-			var a models.Archive
-			res := state.DB.First(&a, id)
-			if checkServerError(w, res.Error) {
-				return
-			}
-
-			w.Write([]byte(a.HTML))
-		},
-	)
-
-	mux.ServeHTTP(w, r)
+	status.WriteHTML(w)
 }

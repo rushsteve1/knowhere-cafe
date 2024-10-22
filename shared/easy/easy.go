@@ -29,7 +29,7 @@ func Must[T any](t T, err error, args ...any) T {
 	args = append(args, "caller", fmt.Sprintf("%s:%d", file, line))
 
 	if err != nil {
-		args = append(args, []any{"error", err})
+		args = append(args, "error", err)
 		slog.Error(msg.(string), args...)
 		panic(msg)
 	}

@@ -49,18 +49,17 @@ var (
 func formatRenderHandler(
 	w http.ResponseWriter,
 	r *http.Request,
-	name string,
+	path string,
 	data Renderable,
 ) {
 	ctx := r.Context()
 	state := easy.Must(State(ctx))
-	auth := easy.Must(Auth(ctx)) != nil
-	auth = auth || state.Flags.Dev
 
 	format := r.Header.Get(ACCEPT_HEADER)
 	slog.Debug("response format", "format", format)
 	target := r.Header.Get(UP_TARGET_HEADER)
 	slog.Debug("response target", "target", target)
+	auth := IsAuthd(ctx)
 
 	// Force this to fix a bug
 	if len(target) > 0 {
@@ -75,7 +74,7 @@ func formatRenderHandler(
 		if prefixAny(f, html_mime) {
 			w.Header().Set(CONTENT_TYPE_HEADER, html_mime)
 			easy.Expect(
-				state.Templ.Render(w, name, target, auth, data),
+				state.Templ.Render(w, path, target, auth, data),
 			)
 			return
 		} else if prefixAny(f, json_mime) {

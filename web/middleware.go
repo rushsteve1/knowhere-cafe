@@ -44,9 +44,24 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		lc := easy.Must(state.Tsnet.LocalClient())
 		who := easy.Must(lc.WhoIs(ctx, r.RemoteAddr))
 
-		ctx = context.WithValue(ctx, models.AUTH_CTX_KEY, who)
+		ctx = context.WithValue(
+			ctx,
+			models.AUTH_CTX_KEY,
+			models.ContextAuth(who),
+		)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func RequireAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if models.IsAuthd(r.Context()) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		http.Error(w, "not authorized", http.StatusUnauthorized)
 	})
 }
 

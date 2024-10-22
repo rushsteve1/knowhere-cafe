@@ -11,6 +11,9 @@ import (
 	"os"
 	"time"
 
+	// This adds to the default handler but we don't use it
+	_ "expvar"
+
 	"knowhere.cafe/src/models"
 	"knowhere.cafe/src/shared/easy"
 	"knowhere.cafe/src/web"
@@ -63,7 +66,10 @@ func main() {
 	state.Templ = models.SetupTemplates(TemplateFiles(state.Flags), state.Flags.Dev)
 
 	// Load Tailscale
-	state.Tsnet = setupTsnet()
+	state.Tsnet = setupTsnet(cfg)
+
+	// Setup the initial expvars
+	setupExpvars()
 
 	// Create the context
 	mainCtx = context.WithValue(
@@ -98,8 +104,17 @@ func main() {
 			}),
 		)
 	} else {
+		// Setup the TCP listener
+		var l net.Listener
+		if easy.Must(state.Config()).Public {
+			slog.Debug("using public funnel connection")
+			l = easy.Must(state.Tsnet.ListenFunnel("tcp", ":443"))
+		} else {
+			slog.Debug("using internal connection")
+			l = easy.Must(state.Tsnet.ListenTLS("tcp", ":443"))
+		}
+
 		// Start the HTTP server and spin
-		l := easy.Must(state.Tsnet.Listen("tcp", ":9999"))
 		err = srv.Serve(l)
 		slog.Error("http server stopped", "error", err)
 	}
@@ -140,8 +155,24 @@ func setupLogger(flags models.FlagConfig, cfg models.Config) *slog.Logger {
 	return slog.New(handler)
 }
 
-func setupTsnet() *tsnet.Server {
+func setupTsnet(cfg models.Config) *tsnet.Server {
 	s := new(tsnet.Server)
-	s.Hostname = "knowhere"
+	s.Hostname = cfg.Hostname
+	s.Ephemeral = true
 	return s
+}
+
+func setupExpvars() {
+	expvar.Publish("environ", expvar.Func(func() any {
+		return os.Environ()
+	}))
+
+	expvar.Publish("time", expvar.Func(func() any {
+		return time.Now()
+	}))
+
+	expvar.Publish("cwd", expvar.Func(func() any {
+		cwd, _ := os.Getwd()
+		return cwd
+	}))
 }

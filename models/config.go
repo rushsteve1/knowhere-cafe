@@ -15,17 +15,19 @@ type FlagConfig struct {
 
 type Config struct {
 	gorm.Model
-	BindAddr     string
-	DevEndpoints bool
-	LogLevel     slog.Level
-	LogHandler   string // either "text" or "json"
+	BindAddr   string
+	Public     bool
+	Hostname   string
+	LogLevel   slog.Level
+	LogHandler string // either "text" or "json"
 }
 
 func defaultConfig() Config {
 	return Config{
-		BindAddr:     ":9999",
-		DevEndpoints: true,
-		LogLevel:     slog.LevelWarn,
-		LogHandler:   "text",
+		BindAddr:   ":9999",
+		Public:     false,
+		Hostname:   "knowhere",
+		LogLevel:   slog.LevelWarn,
+		LogHandler: "text",
 	}
 }
